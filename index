@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appearance Anxiety Filter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #a7e2e3, #e2a7e3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 10vh;
+            color: #333;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            max-width: 450px; 
+            width: 95%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: max-width 0.3s;
+        }
+        @media (min-width: 768px) {
+            .container {
+                max-width: 650px; 
+            }
+        }
+        .container.gallery-view {
+            max-width: 750px;
+        }
+        .section-title {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -5px;
+            width: 50%;
+            height: 4px;
+            background-color: #6d28d9;
+            border-radius: 2px;
+        }
+        .checkbox-container {
+            /* 預設的身體部位選項使用網格 */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
+        }
+        
+        /* 臉部細項標題樣式 - 比選項文字 (0.875rem) 大 */
+        .detail-option-title {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 700; /* font-bold */
+            color: #4c1d95; /* indigo-800 */
+        }
+        
+        /* 臉部細項容器樣式 - 確保選項垂直排列並左對齊 */
+        .face-detail-container {
+            display: flex;
+            flex-direction: column; /* 垂直堆疊 */
+            gap: 0.5rem; 
+        }
+
+        /* 確保臉部選項的 pill 按鈕佔滿容器寬度，且文字左對齊 */
+        .face-detail-container label {
+            width: 100%;
+        }
+
+        .checkbox-label {
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-radius: 9999px;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem; 
+            display: block; /* 確保 label 內的 span 是區塊元素 */
+        }
+        /* 應用於臉部細項的 checkbox-label */
+        .face-detail-container .checkbox-label {
+            text-align: left; /* 確保文字左對齊 */
+            padding-left: 1.5rem; /* 增加左邊距 */
+        }
+
+        input[type="checkbox"]:checked + .checkbox-label {
+            background-color: #6d28d9;
+            border-color: #6d28d9;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(109, 40, 217, 0.2);
+        }
+        
+        .file-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+            border: 2px dashed #a855f7;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            color: #6d28d9;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        .file-box:hover {
+            background-color: #f3e8ff;
+        }
+        .file-box.gallery-upload-style {
+            background-color: #f3e8ff;
+            border-color: #6d28d9;
+        }
+        .file-box.gallery-upload-style:hover {
+            background-color: #f2e1ff;
+        }
+        .file-box svg {
+            width: 2rem;
+            height: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .slogan {
+            font-style: italic;
+            font-weight: 700;
+            color: #6d28d9;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+            font-size: 1.125rem;
+        }
+        .size-input-container {
+            margin-top: 1rem;
+            display: grid;
+            gap: 1rem;
+        }
+        .feedback {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+        }
+        .feedback.positive {
+            background-color: #c8e6c9;
+            color: #388e3c;
+        }
+        .feedback.negative {
+            background-color: #ffcdd2;
+            color: #d32f2f;
+        }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 0.6rem;
+            margin-top: 1rem;
+        }
+        
+        /* Experiment Item Styling */
+        .selection-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .selection-item {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+            filter: grayscale(0.5); 
+            border-radius: 0.5rem;
+        }
+        .selection-wrapper.selected .selection-item {
+            border-color: #ef4444; /* Red border for selected (anxious) */
+            filter: grayscale(0); 
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.7);
+            transform: scale(1.05);
+        }
+        
+        /* Styling for the custom slider */
+        .rating-controls {
+            padding-top: 0.5rem;
+            width: 100%;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s ease-in-out;
+        }
+        .rating-controls.visible {
+            opacity: 1;
+            max-height: 100px; 
+            padding-top: 1rem;
+        }
+        .rating-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0; 
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0;
+            padding: 0;
+        }
+        .rating-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #6d28d9; 
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+        .rating-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #6d28d9; 
+            cursor: pointer;
+            border: 3px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+        .slider-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6d28d9;
+            text-align: center;
+            margin-top: 2px;
+        }
+        
+        .gallery-item {
+            width: 100%;
+            height: 80px; 
+            object-fit: cover;
+            border-radius: 0.5rem;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+            opacity: 1; 
+        }
+        .gallery-item.filtered {
+            border-color: #d32f2f;
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.5);
+        }
+        .gallery-item.safe {
+            border-color: #388e3c;
+            opacity: 0.7;
+        }
+        #loading-message {
+            background-color: #fef3c7;
+            color: #92400e;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        .hidden-item {
+            display: none !important;
+        }
+        .hidden-page {
+            display: none;
+        }
+        .hidden-step {
+            display: none;
+        }
+        .disabled-button {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-cyan-300 via-pink-300 to-purple-400 min-h-screen flex flex-col justify-center items-center p-4">
+
+    <div id="main-container" class="container text-center relative">
+        <button id="fullscreen-toggle-button" class="absolute top-4 right-4 bg-purple-100 hover:bg-purple-200 text-purple-600 font-bold py-1 px-3 rounded-full transition-all text-xs z-10">
+            全螢幕模式
+        </button>
+        
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Appearance Anxiety Filter</h1>
+        <p class="text-sm text-gray-500 mb-6">透過設定個人化過濾器，保護您的心理健康</p>
+        
+        <!-- Setting Page (Page 1) -->
+        <div id="settings-page">
+            
+            <button id="go-to-gallery-button-top" class="bg-purple-100 hover:bg-purple-200 text-purple-600 font-bold py-2 px-8 rounded-full transition-all w-full mb-4 text-sm">
+                前往圖庫 (設定完成後跳轉)
+            </button>
+            
+            <!-- Personal Info Section -->
+            <div class="mb-4">
+                <div class="section-title">您的基本資料</div>
+                <div class="flex flex-col sm:flex-row gap-4 mt-4">
+                    <select id="age-input" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">
+                        <option value="" disabled selected>您的年齡</option>
+                        <option value="10-19">10-19歲</option>
+                        <option value="20-29">20-29歲</option>
+                        <option value="30-39">30-39歲</option>
+                        <option value="40-49">40-49歲</option>
+                        <option value="50-59">50-59歲</option>
+                        <option value="60+">60歲以上</option>
+                    </select>
+                    <select id="gender-select" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">
+                        <option value="" disabled selected>您的性別</option>
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Body Parts and Size Input Wrapper (Responsive Grid) -->
+            <div class="md:grid md:grid-cols-2 md:gap-6 mb-6">
+                <!-- Body Parts Section (Left/Top) -->
+                <div>
+                    <div class="section-title">在意的身體部位</div>
+                    <div id="body-parts-container" class="checkbox-container mt-4">
+                        <label data-part="face">
+                            <input type="checkbox" class="hidden" value="face" />
+                            <span class="checkbox-label">臉</span>
+                        </label>
+                        <label data-part="legs">
+                            <input type="checkbox" class="hidden" value="legs" />
+                            <span class="checkbox-label">腿</span>
+                        </label>
+                        <label data-part="chest">
+                            <input type="checkbox" class="hidden" value="chest" />
+                            <span class="checkbox-label">胸部</span>
+                        </label>
+                        <label data-part="waist">
+                            <input type="checkbox" class="hidden" value="waist" />
+                            <span class="checkbox-label">腰</span>
+                        </label>
+                        <label data-part="buttocks">
+                            <input type="checkbox" class="hidden" value="buttocks" />
+                            <span class="checkbox-label">臀部</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Size Input Section (Right/Bottom) -->
+                <div id="size-input-section" class="hidden mt-6 md:mt-0">
+                    <div class="section-title">輸入部位尺寸/細項</div>
+                    <div id="size-input-container" class="size-input-container">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anxiety Example Upload Section -->
+            <div class="mb-6">
+                <div class="section-title">上傳讓你感到焦慮的單張圖片 (選填)</div>
+                <label for="anxiety-example-upload" class="file-box">
+                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <span id="anxiety-example-label-text">點擊上傳讓您焦慮的單張範例圖片</span>
+                    <input type="file" id="anxiety-example-upload" accept="image/*" class="hidden"/>
+                </label>
+                <p id="anxiety-example-status" class="text-xs text-left mt-2 text-gray-500">
+                    尚未上傳範例圖片。
+                </p>
+            </div>
+
+            <!-- New Topic Filter Section -->
+            <div class="mb-6">
+                <div class="section-title">過濾主題</div>
+                <div class="mt-4">
+                    <input type="text" id="topic-input" placeholder="輸入您想要過濾的主題關鍵字 (如: 瘦身, 健美, 網紅)" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all" />
+                </div>
+            </div>
+
+            <!-- BOTTOM MAIN ACTION BUTTON -->
+            <button id="start-filter-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mb-4">
+                開始進行篩選 (準備實驗)
+            </button>
+            
+        </div>
+        
+        <!-- Experiment Page (Page 2) - MULTI-STEP -->
+        <div id="experiment-page" class="hidden-page">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">實驗：評估圖片焦慮程度 
+                (<span id="set-counter">第 1 / 3 組</span>)
+            </h2>
+
+            <button id="back-to-settings-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition-all text-sm mb-4 w-full">
+                ← 返回設定頁
+            </button>
+            
+            <div id="experiment-loading-message" class="hidden mb-4">
+                <div id="loading-message">正在準備實驗內容...</div>
+            </div>
+
+            <!-- STEP 1: Image Selection Instruction -->
+            <div id="step-selection-instruction" class="mb-6 p-4 border border-purple-300 rounded-lg bg-purple-50">
+                <div class="section-title text-purple-700">步驟一：選出最焦慮的 3 張圖片</div>
+                <p class="text-sm text-gray-700 mt-2 text-left">
+                    請在以下圖片中，**點擊** 選出讓您感到**容貌焦慮最強烈**的 **3 張** 圖片。
+                    <span class="font-bold block mt-1 text-red-600" id="selection-status-text">您已選擇 0 張 / 需選擇 3 張</span>
+                </p>
+            </div>
+
+            <!-- STEP 2: Rating Instruction (Initially Hidden) -->
+            <div id="step-rating-instruction" class="hidden mb-6 p-4 border border-purple-300 rounded-lg bg-purple-50">
+                <div class="section-title text-purple-700">步驟二：評估所有圖片的焦慮強度 (1-7分)</div>
+                <p class="text-sm text-gray-700 mt-2 text-left">
+                    請對以下 **9 張圖片** 逐一評估其引發您**容貌焦慮的強度**。
+                    <span class="font-bold block mt-1 text-red-600">您在步驟一選出的 3 張圖片已用紅框標註。</span>
+                </p>
+            </div>
+            
+            <!-- 9-Image Grid for Selection / Rating (grid-cols-3) -->
+            <div id="experiment-selection-grid" class="mb-6 grid grid-cols-3 gap-3">
+                <!-- 9 image wrappers will be inserted here -->
+            </div>
+
+            <!-- Buttons -->
+            <button id="go-to-rating-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mt-6 disabled-button" disabled>
+                進入評分步驟 (已選擇 0/3)
+            </button>
+            
+            <!-- This button handles BOTH moving to next set OR finishing the experiment -->
+            <button id="next-set-button" class="hidden bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mt-6">
+                進入下一組實驗 (第 2 / 3 組)
+            </button>
+            
+        </div>
+
+        <!-- NEW: Thank You Page (Page 4) -->
+        <div id="thankyou-page" class="hidden-page">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+                謝謝您的填答，實驗已經結束
+            </h2>
+
+            <div class="p-6 bg-purple-50 rounded-xl border border-purple-300 shadow-md">
+                <p class="text-lg text-purple-700 font-semibold mb-3">
+                    感謝您的參與！
+                </p>
+                <p class="text-base text-gray-700 mb-4">
+                    您的個人化設定以及實驗數據已成功記錄，這對於我們訓練更符合您需求的容貌焦慮 AI 過濾器至關重要。
+                </p>
+                <p class="text-sm text-gray-600 font-medium">
+                    您現在可以回到設定頁面，或查看 AI 根據您的設定所模擬的過濾結果。
+                </p>
+            </div>
+
+            <!-- MODIFIED: Changed the main action button -->
+            <div class="mt-8 space-y-4">
+                <button id="back-to-settings-from-thankyou" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full">
+                    返回設定頁面
+                </button>
+            </div>
+            
+            <!-- NEW: Small link to the gallery -->
+            <button id="go-to-gallery-from-thankyou-small" class="text-sm text-purple-600 mt-4 hover:underline disabled-button" disabled>
+                或點此查看 AI 過濾結果 (圖庫)
+            </button>
+        </div>
+        
+        <!-- Gallery Results Page (Page 3) -->
+        <div id="gallery-page" class="hidden-page">
+            
+            <button id="back-from-gallery-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition-all text-sm mb-4 w-full">
+                ← 返回致謝頁
+            </button>
+
+            <!-- Gallery Image Upload Section (Hidden when coming from experiment) -->
+            <div class="mb-6">
+                <div class="section-title">上傳您的模擬圖庫照片 (建議 200 張)</div>
+                <label for="gallery-upload" class="file-box gallery-upload-style">
+                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12l-4.5 4.5m0 0l-4.5-4.5m4.5 4.5V3" />
+                    </svg>
+                    <span id="gallery-upload-label-text">點擊上傳多張照片到模擬圖庫</span>
+                    <input type="file" id="gallery-upload" accept="image/*" class="hidden" multiple/>
+                </label>
+                <p id="gallery-upload-status" class="text-xs text-left mt-2 text-gray-500">
+                    尚未上傳任何圖片。
+                </p>
+            </div>
+            
+            <!-- Run Filter Button - now repurposed -->
+            <button id="show-full-results-button" class="bg-purple-600 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mb-4 disabled-button" disabled>
+                顯示完整 AI 過濾結果
+            </button>
+
+
+            <!-- Image Gallery -->
+            <div id="gallery-container" class="mb-6">
+                <div class="section-title" id="gallery-title">社群媒體內容模擬 (預設佔位圖)</div>
+                <p class="text-xs text-gray-500 mt-2 text-left">紅色邊框為 AI 預測可能引起您焦慮的圖片；綠色邊框為安全內容。</p>
+                <div id="image-gallery" class="gallery mt-4">
+                    <!-- Placeholder images or uploaded images will be inserted here -->
+                </div>
+            </div>
+            
+            <div id="feedback-message" class="hidden feedback"></div>
+            
+            <!-- Confirm Filter Button -->
+            <button id="confirm-filter-button" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mt-4">
+                確定過濾，只顯示安全照片
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const API_KEY = ""; // Canvas will provide this in runtime
+        const MAX_IMAGE_COUNT = 200; 
+        const MAX_EXPERIMENT_SETS = 3; 
+        const IMAGES_PER_SET = 9; 
+        const MAX_SELECTION = 3; 
+        const MODEL_NAME = "gemini-2.5-flash-preview-05-20";
+
+        let uploadedGalleryDataUrls = []; 
+        let globalClassificationResults = null; 
+
+        let experimentDataSets = []; 
+        let currentSetIndex = 0; 
+        
+        let db, auth;
+        let userId;
+        let isAuthReady = false;
+
+        // --- HTML Elements ---
+        const mainContainer = document.getElementById('main-container');
+        const settingsPage = document.getElementById('settings-page');
+        const experimentPage = document.getElementById('experiment-page');
+        const galleryPage = document.getElementById('gallery-page');
+        const thankyouPage = document.getElementById('thankyou-page'); 
+        
+        const backToSettingsButton = document.getElementById('back-to-settings-button');
+        const backFromGalleryButton = document.getElementById('back-from-gallery-button'); 
+        const backToSettingsFromThankYouButton = document.getElementById('back-to-settings-from-thankyou');
+        const goToGalleryFromThankYouSmall = document.getElementById('go-to-gallery-from-thankyou-small');
+        
+        const setCounter = document.getElementById('set-counter');
+
+        const stepSelectionInstruction = document.getElementById('step-selection-instruction');
+        const stepRatingInstruction = document.getElementById('step-rating-instruction');
+        const experimentSelectionGrid = document.getElementById('experiment-selection-grid'); 
+        const goToRatingButton = document.getElementById('go-to-rating-button');
+        const selectionStatusText = document.getElementById('selection-status-text');
+        const experimentLoadingMessage = document.getElementById('experiment-loading-message');
+        const nextSetButton = document.getElementById('next-set-button'); 
+
+        const bodyPartsContainer = document.getElementById('body-parts-container');
+        const sizeInputSection = document.getElementById('size-input-section');
+        const sizeInputContainer = document.getElementById('size-input-container');
+        const topicInput = document.getElementById('topic-input');
+        const anxietyExampleUpload = document.getElementById('anxiety-example-upload');
+        const anxietyExampleStatus = document.getElementById('anxiety-example-status');
+        const anxietyExampleLabelText = document.getElementById('anxiety-example-label-text');
+        
+        const galleryUpload = document.getElementById('gallery-upload'); 
+        const galleryUploadStatus = document.getElementById('gallery-upload-status'); 
+        const galleryUploadLabelText = document.getElementById('gallery-upload-label-text'); 
+        
+        const goToGalleryButtonTop = document.getElementById('go-to-gallery-button-top');
+        const startFilterButton = document.getElementById('start-filter-button'); 
+        const fullscreenToggleButton = document.getElementById('fullscreen-toggle-button'); 
+
+        const showFullResultsButton = document.getElementById('show-full-results-button');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const imageGallery = document.getElementById('image-gallery');
+        const ageInput = document.getElementById('age-input');
+        const genderSelect = document.getElementById('gender-select');
+        const confirmFilterButton = document.getElementById('confirm-filter-button');
+        const galleryTitle = document.getElementById('gallery-title');
+
+        // --- FIREBASE SETUP ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            setLogLevel('Debug');
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken)
+                    .catch(e => {
+                        console.error("Custom token sign-in failed, signing in anonymously:", e);
+                        signInAnonymously(auth);
+                    });
+            } else {
+                signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    console.log("Firebase Auth Ready. User ID:", userId);
+                    // Initial rendering of placeholder images once ready
+                    renderGalleryImages();
+                } else {
+                    // Fallback for unauthenticated/anonymous users
+                    userId = crypto.randomUUID();
+                    isAuthReady = true;
+                    console.log("Firebase Auth Ready. Anonymous/Fallback User ID:", userId);
+                    renderGalleryImages();
+                }
+            });
+        } else {
+            console.error("Firebase config is missing. Data persistence will not work.");
+            userId = crypto.randomUUID();
+            isAuthReady = true;
+            renderGalleryImages();
+        }
+
+        async function saveUserSettings(data) {
+            if (!isAuthReady || !db || !userId) {
+                console.error("Firestore not ready or userId not available.");
+                return;
+            }
+            try {
+                const docRef = doc(db, `/artifacts/${appId}/users/${userId}/anxiety_filters`, 'user_data');
+                await setDoc(docRef, {
+                    ...data,
+                    timestamp: new Date().toISOString(),
+                });
+                console.log("User settings saved successfully.");
+                return true;
+            } catch (e) {
+                console.error("Error saving user settings:", e);
+                return false;
+            }
+        }
+        
+        // --- UTILITY FUNCTIONS ---
+        
+        function showPage(pageId) {
+            settingsPage.classList.add('hidden-page');
+            experimentPage.classList.add('hidden-page');
+            galleryPage.classList.add('hidden-page');
+            thankyouPage.classList.add('hidden-page'); 
+            mainContainer.classList.remove('gallery-view');
+            
+            if (pageId === 'settings-page') {
+                settingsPage.classList.remove('hidden-page');
+            } else if (pageId === 'experiment-page') {
+                experimentPage.classList.remove('hidden-page');
+            } else if (pageId === 'gallery-page') {
+                galleryPage.classList.remove('hidden-page');
+                mainContainer.classList.add('gallery-view');
+            } else if (pageId === 'thankyou-page') { 
+                thankyouPage.classList.remove('hidden-page');
+                const isReady = !!globalClassificationResults;
+                goToGalleryFromThankYouSmall.disabled = !isReady;
+                goToGalleryFromThankYouSmall.classList.toggle('disabled-button', !isReady);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result); 
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function generatePlaceholderDataUrls(count) {
+             const dataUrls = [];
+             const tags = ['美食', '旅遊', '健身', '網美', '時尚', '風景', '寵物', '日常'];
+             for (let i = 0; i < count; i++) {
+                const width = 150;
+                const height = 150;
+                const tag = tags[Math.floor(Math.random() * tags.length)];
+                
+                const text = `Content-${tag}-${i}`; 
+                const color_bg = Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                const color_text = 'ffffff';
+
+                dataUrls.push(`https://placehold.co/${width}x${height}/${color_bg}/${color_text}?text=${text}`);
+            }
+            return dataUrls;
+        }
+        
+        function base64ToDataUrl(dataUrl) {
+            const parts = dataUrl.split(',');
+            if (parts.length > 1) {
+                const mimeType = parts[0].match(/:(.*?);/)[1];
+                const base64Data = parts[1];
+                return { mimeType, base64Data };
+            }
+            // For placeholder URLs, we just return null or handle them later
+            return null;
+        }
+
+        // --- GEMINI API 呼叫邏輯 (省略細節，專注於應用程式邏輯) ---
+        async function callGeminiApi(payload) {
+            // ... (API call logic is simplified for front-end focus)
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${payload.model}:generateContent?key=${API_KEY}`;
+            const maxRetries = 5;
+            let lastError = null;
+
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.json();
+                        throw new Error(`API call failed: ${response.status} - ${JSON.stringify(errorBody)}`);
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error("API response text is empty.");
+                    
+                    return text.trim();
+
+                } catch (error) {
+                    lastError = error;
+                    console.warn(`Attempt ${i + 1} failed. Retrying in ${Math.pow(2, i)}s...`, error);
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                }
+            }
+            throw lastError;
+        }
+
+
+        async function processAnxietyExample(imageData) {
+            const prompt = `請分析這張圖片的容貌特徵，這些特徵被使用者視為引起焦慮的『完美』樣貌。請只列出關鍵詞，例如: 極致纖細的腰部; 飽滿豐唇; 無瑕疵肌膚; 立體五官; 健美肌肉。請用分號分隔，不要超過 50 個字。`;
+            const dataParts = base64ToDataUrl(imageData);
+
+            if (!dataParts) return "無法分析佔位圖片";
+
+            const payload = {
+                model: MODEL_NAME,
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: dataParts.mimeType, data: dataParts.base64Data } }
+                    ]
+                }],
+            };
+
+            try {
+                const result = await callGeminiApi(payload);
+                return result;
+            } catch (error) {
+                console.error("Error processing anxiety example image:", error);
+                return "分析失敗";
+            }
+        }
+        
+        // --- 部位詳細資訊配置 (CRITICAL CHANGE: CHEST) ---
+        const partDetailsConfig = {
+            'legs': {
+                title: '腿部尺寸 (公分)',
+                typeLabel: '您在意的腿部特徵是什麼?',
+                sizePlaceholder: '例如: 腿圍 50',
+                typeOptions: { 'thin': '極致纖細', 'toned': '健美結實', 'general': '一般體型' }
+            },
+            'chest': { // <--- CRITICAL CHANGE: NEW BRA SIZE CONFIG
+                type: 'bra_size', 
+                bandSizes: ["70", "75", "80", "85", "90", "95"],
+                cupSizes: ["A", "B", "C", "D", "E"]
+            },
+            'waist': {
+                title: '腰部尺寸 (公分)',
+                typeLabel: '您在意的腰部特徵是什麼?',
+                sizePlaceholder: '例如: 腰圍 60',
+                typeOptions: { 'thin': '極致纖細', 'toned': '健美線條', 'general': '一般體型' }
+            },
+            'buttocks': {
+                title: '臀部尺寸 (公分)',
+                typeLabel: '您在意的臀部特徵是什麼?',
+                sizePlaceholder: '例如: 臀圍 90',
+                typeOptions: { 'lifted': '上提渾圓', 'toned': '健美結實', 'general': '一般體型' }
+            }
+        };
+
+        // --- DYNAMIC INPUT RENDERING ---
+        function updateSizeInputSection() {
+            const selectedParts = Array.from(document.querySelectorAll('#body-parts-container input[type="checkbox"]:checked')).map(cb => cb.value);
+            sizeInputContainer.innerHTML = '';
+            let html = '';
+            let hasInputs = false;
+
+            selectedParts.forEach(part => {
+                if (part === 'face') {
+                    hasInputs = true;
+                    // Face detail configuration (simplified inline for this component)
+                    const faceDetails = [
+                        { val: 'small_face', label: '巴掌臉/小臉' },
+                        { val: 'defined_jaw', label: '清晰下顎線' },
+                        { val: 'big_eyes', label: '深邃大眼' },
+                        { val: 'high_nose', label: '高挺鼻樑' },
+                        { val: 'flawless_skin', label: '無瑕疵肌膚' },
+                        { val: 'full_lips', label: '豐滿嘴唇' },
+                    ];
+                    
+                    html += `
+                        <div class="p-3 bg-white rounded-lg shadow-sm border border-pink-200">
+                            <h4 class="detail-option-title mb-3">臉部細節：選擇讓您焦慮的特徵</h4>
+                            <div class="face-detail-container">
+                                ${faceDetails.map(detail => `
+                                    <label data-part="face-${detail.val}" class="w-full">
+                                        <input type="checkbox" class="hidden" value="${detail.val}" />
+                                        <span class="checkbox-label">${detail.label}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else if (part === 'chest') { // <--- NEW CHEST RENDERING LOGIC
+                    hasInputs = true;
+                    const config = partDetailsConfig[part];
+                    
+                    html += `
+                        <div class="p-3 bg-white rounded-lg shadow-sm border border-purple-200">
+                            <h4 class="detail-option-title mb-3">胸部尺寸：選擇罩杯與下胸圍</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                    `;
+                    
+                    // 1. Band Size Select (下胸圍)
+                    let bandOptions = config.bandSizes.map(size => `<option value="${size}">${size}</option>`).join('');
+                    html += `
+                        <div class="space-y-1">
+                            <label for="chest-band-size" class="block text-xs font-medium text-gray-700">下胸圍 (公分)</label>
+                            <select id="chest-band-size" data-part="${part}" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm focus:ring-purple-500">
+                                ${bandOptions}
+                            </select>
+                        </div>
+                    `;
+
+                    // 2. Cup Size Select (罩杯)
+                    let cupOptions = config.cupSizes.map(cup => `<option value="${cup}">${cup}</option>`).join('');
+                    html += `
+                        <div class="space-y-1">
+                            <label for="chest-cup-size" class="block text-xs font-medium text-gray-700">罩杯選項</label>
+                            <select id="chest-cup-size" data-part="${part}" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm focus:ring-purple-500">
+                                ${cupOptions}
+                            </select>
+                        </div>
+                    `;
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+
+                } else if (partDetailsConfig[part]) {
+                    // Standard size + anxiety type for legs, waist, buttocks
+                    hasInputs = true;
+                    const config = partDetailsConfig[part];
+                    
+                    let typeOptions = Object.entries(config.typeOptions).map(([val, label]) => 
+                        `<option value="${val}">${label}</option>`
+                    ).join('');
+
+                    html += `
+                        <div class="p-3 bg-white rounded-lg shadow-sm border border-blue-200">
+                            <h4 class="detail-option-title mb-3">${config.title}</h4>
+                            <div class="space-y-3">
+                                <input type="text" data-part="${part}" placeholder="${config.sizePlaceholder}" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm focus:ring-purple-500" />
+                                <select id="${part}-anxiety-type" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm focus:ring-purple-500">
+                                    <option value="general">選擇焦慮特徵類型...</option>
+                                    ${typeOptions}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            sizeInputContainer.innerHTML = html;
+            sizeInputSection.classList.toggle('hidden', !hasInputs);
+        }
+
+        // Attach event listener to body parts checkboxes
+        bodyPartsContainer.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                updateSizeInputSection();
+            }
+        });
+        
+        // --- DATA RETRIEVAL LOGIC ---
+        
+        function getFilterData() {
+            const selectedParts = Array.from(document.querySelectorAll('#body-parts-container input[type="checkbox"]:checked')).map(cb => cb.value);
+            const detailData = {};
+
+            selectedParts.forEach(part => {
+                if (part === 'face') {
+                    const faceCheckboxes = document.querySelectorAll('#size-input-container [data-part^="face-"] input[type="checkbox"]:checked');
+                    detailData.face = Array.from(faceCheckboxes).map(cb => cb.value);
+                } else if (part === 'chest') { // <--- NEW CHEST DATA RETRIEVAL
+                     const bandSelect = document.getElementById('chest-band-size');
+                     const cupSelect = document.getElementById('chest-cup-size');
+                     detailData[part] = {
+                         band: bandSelect ? bandSelect.value : null,
+                         cup: cupSelect ? cupSelect.value : null
+                     };
+                } else if (part === 'waist' || part === 'legs' || part === 'buttocks') {
+                    // Standard size/type input logic
+                    const typeSelect = document.getElementById(`${part}-anxiety-type`);
+                    const sizeInput = document.querySelector(`#size-input-container input[data-part="${part}"]`);
+                    detailData[part] = {
+                        type: typeSelect ? typeSelect.value : 'general',
+                        size: sizeInput ? sizeInput.value : null
+                    };
+                }
+            });
+
+            return {
+                age: ageInput.value,
+                gender: genderSelect.value,
+                bodyParts: selectedParts,
+                details: detailData,
+                topics: topicInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0),
+                anxietyImage: anxietyExampleUpload.files.length > 0 ? anxietyExampleUpload.files[0] : null,
+            };
+        }
+
+
+        async function initializeExperiment() {
+            if (!isAuthReady) return;
+
+            const allImages = uploadedGalleryDataUrls.length > 0 
+                ? uploadedGalleryDataUrls 
+                : generatePlaceholderDataUrls(MAX_IMAGE_COUNT);
+            
+            // Randomly select 9 images for each of the 3 sets (total 27 images)
+            const selectedImageIndices = new Set();
+            while (selectedImageIndices.size < MAX_EXPERIMENT_SETS * IMAGES_PER_SET && selectedImageIndices.size < allImages.length) {
+                const randomIndex = Math.floor(Math.random() * allImages.length);
+                selectedImageIndices.add(randomIndex);
+            }
+            
+            const indicesArray = Array.from(selectedImageIndices);
+            experimentDataSets = [];
+
+            for (let i = 0; i < MAX_EXPERIMENT_SETS; i++) {
+                const setIndices = indicesArray.slice(i * IMAGES_PER_SET, (i + 1) * IMAGES_PER_SET);
+                if (setIndices.length === 0) break; // Stop if not enough images
+                
+                const setImages = setIndices.map(index => ({
+                    indexInGallery: index,
+                    dataUrl: allImages[index],
+                    isFiltered: 0, 
+                    rating: 0, // 0 means unrated
+                    isSelected: false,
+                }));
+
+                experimentDataSets.push({
+                    name: `Set ${i + 1}`,
+                    setImages: setImages,
+                    selections: [], // Stores the index of selected image within the 9-image array
+                    ratings: [], // Stores the 1-7 rating for all 9 images
+                });
+            }
+            
+            currentSetIndex = 0;
+            renderExperimentSet();
+        }
+
+        function renderExperimentSet() {
+            const currentSet = experimentDataSets[currentSetIndex];
+            if (!currentSet) return;
+            
+            setCounter.textContent = `第 ${currentSetIndex + 1} / ${experimentDataSets.length} 組`;
+            
+            // Reset UI for Step 1: Selection
+            experimentSelectionGrid.innerHTML = '';
+            stepSelectionInstruction.classList.remove('hidden');
+            stepRatingInstruction.classList.add('hidden');
+            goToRatingButton.classList.remove('hidden');
+            nextSetButton.classList.add('hidden');
+            goToRatingButton.disabled = true;
+            goToRatingButton.textContent = `進入評分步驟 (已選擇 0/${MAX_SELECTION})`;
+            selectionStatusText.textContent = `您已選擇 0 張 / 需選擇 ${MAX_SELECTION} 張`;
+
+            currentSet.setImages.forEach((img, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'selection-wrapper';
+                wrapper.setAttribute('data-index', index); 
+                
+                const imgElement = document.createElement('img');
+                imgElement.src = img.dataUrl;
+                imgElement.className = 'selection-item';
+                imgElement.loading = 'lazy';
+                
+                const ratingControls = document.createElement('div');
+                ratingControls.className = 'rating-controls';
+                ratingControls.innerHTML = `
+                    <input type="range" min="1" max="7" value="4" class="rating-slider" data-rating-index="${index}" />
+                    <div class="flex justify-between text-xs mt-1 px-1">
+                        <span class="text-red-500 font-bold">1(低焦慮)</span>
+                        <span class="text-gray-500">4(中等)</span>
+                        <span class="text-indigo-500 font-bold">7(高焦慮)</span>
+                    </div>
+                `;
+
+                wrapper.appendChild(imgElement);
+                wrapper.appendChild(ratingControls);
+                experimentSelectionGrid.appendChild(wrapper);
+
+                wrapper.addEventListener('click', (e) => handleSelection(index, wrapper));
+            });
+        }
+
+        function handleSelection(index, wrapper) {
+            const currentSet = experimentDataSets[currentSetIndex];
+            const isSelected = wrapper.classList.contains('selected');
+            
+            if (stepSelectionInstruction.classList.contains('hidden')) return; // Ignore clicks during rating step
+
+            if (isSelected) {
+                // Deselect
+                wrapper.classList.remove('selected');
+                currentSet.selections = currentSet.selections.filter(i => i !== index);
+                currentSet.setImages[index].isSelected = false;
+            } else if (currentSet.selections.length < MAX_SELECTION) {
+                // Select
+                wrapper.classList.add('selected');
+                currentSet.selections.push(index);
+                currentSet.setImages[index].isSelected = true;
+            }
+            
+            // Update button and status
+            const count = currentSet.selections.length;
+            selectionStatusText.textContent = `您已選擇 ${count} 張 / 需選擇 ${MAX_SELECTION} 張`;
+            goToRatingButton.textContent = `進入評分步驟 (已選擇 ${count}/${MAX_SELECTION})`;
+            goToRatingButton.disabled = count !== MAX_SELECTION;
+            goToRatingButton.classList.toggle('disabled-button', count !== MAX_SELECTION);
+        }
+
+        function startRatingStep() {
+            stepSelectionInstruction.classList.add('hidden');
+            stepRatingInstruction.classList.remove('hidden');
+            goToRatingButton.classList.add('hidden');
+            nextSetButton.classList.remove('hidden');
+            
+            // Update next button text
+            if (currentSetIndex + 1 < experimentDataSets.length) {
+                nextSetButton.textContent = `進入下一組實驗 (第 ${currentSetIndex + 2} / ${experimentDataSets.length} 組)`;
+            } else {
+                nextSetButton.textContent = `完成實驗並生成過濾器`;
+            }
+            
+            nextSetButton.disabled = true;
+            nextSetButton.classList.add('disabled-button');
+            
+            // Show all rating sliders
+            const wrappers = experimentSelectionGrid.querySelectorAll('.selection-wrapper');
+            wrappers.forEach(wrapper => {
+                const controls = wrapper.querySelector('.rating-controls');
+                controls.classList.add('visible');
+                
+                // Add change listener to slider
+                const slider = controls.querySelector('.rating-slider');
+                slider.addEventListener('input', checkAllRatings);
+            });
+            
+            checkAllRatings(); // Check initial state
+        }
+
+        function checkAllRatings() {
+            const currentSet = experimentDataSets[currentSetIndex];
+            const sliders = experimentSelectionGrid.querySelectorAll('.rating-slider');
+            let ratedCount = 0;
+            const ratings = [];
+
+            sliders.forEach((slider, index) => {
+                const value = parseInt(slider.value, 10);
+                // Only count the rating if the user has actually moved the slider from the default (4)
+                if (value !== 4) { 
+                    ratedCount++;
+                }
+                ratings[index] = value;
+            });
+            
+            currentSet.ratings = ratings;
+            
+            const requiredRatings = currentSet.setImages.length; // Need 9 ratings (even if 4 is the default)
+
+            const allRated = ratedCount >= requiredRatings; 
+
+            // IMPORTANT: For simplicity, we enforce that they must move the slider for all 9 images.
+            if (ratedCount === requiredRatings) {
+                 nextSetButton.disabled = false;
+                 nextSetButton.classList.remove('disabled-button');
+            } else {
+                 nextSetButton.disabled = true;
+                 nextSetButton.classList.add('disabled-button');
+            }
+        }
+
+        async function nextExperimentSet() {
+            // Check if all ratings are done (should be checked by button handler)
+            const currentSet = experimentDataSets[currentSetIndex];
+            if (currentSet.ratings.length !== IMAGES_PER_SET) return;
+
+            // Save the results of the current set
+            currentSet.setImages.forEach((img, index) => {
+                img.rating = currentSet.ratings[index];
+                img.isFiltered = img.isSelected ? 1 : 0; // Simple initial filter prediction based on selection
+            });
+
+            currentSetIndex++;
+            
+            if (currentSetIndex < experimentDataSets.length) {
+                // Next set
+                renderExperimentSet();
+            } else {
+                // Finish experiment
+                await runAiClassification();
+            }
+        }
+        
+        async function runAiClassification() {
+            experimentLoadingMessage.classList.remove('hidden');
+            experimentPage.classList.add('hidden-page');
+            
+            const filterData = getFilterData();
+            let anxietyKeywords = "無";
+
+            // 1. Process anxiety example image (if exists)
+            if (filterData.anxietyImage) {
+                 const imageData = await readFileAsDataUrl(filterData.anxietyImage);
+                 anxietyKeywords = await processAnxietyExample(imageData);
+            }
+            
+            // 2. Prepare Experiment Data for AI
+            const experimentSummary = experimentDataSets.map((set, setIndex) => {
+                const selectedIndices = set.selections.map(i => set.setImages[i].indexInGallery);
+                const ratings = set.setImages.map((img, i) => ({ 
+                    index: img.indexInGallery, 
+                    rating: set.ratings[i] 
+                }));
+                return { setIndex, selectedIndices, ratings };
+            });
+
+            // 3. Prepare Prompt for Classification
+            const fullPrompt = `
+                請分析以下使用者提供的個人資料、容貌焦慮數據，以及圖庫圖片的內容，為他們模擬生成一個二元分類結果（0=安全，1=焦慮）。
+                
+                --- 使用者檔案 ---
+                年齡: ${filterData.age || '未提供'}
+                性別: ${filterData.gender || '未提供'}
+                在意的部位: ${filterData.bodyParts.join(', ') || '無'}
+                細節設定: ${JSON.stringify(filterData.details)}
+                過濾主題: ${filterData.topics.join(', ') || '無'}
+                範例圖片分析關鍵詞: ${anxietyKeywords}
+                
+                --- 實驗數據 (每張圖片在圖庫中的原始索引及評分) ---
+                ${JSON.stringify(experimentSummary)}
+                
+                --- 任務 ---
+                請根據以上所有資訊，為一個包含 200 張圖片的虛擬圖庫生成分類結果。
+                輸出必須是純粹的 JSON 陣列，包含 200 個元素，每個元素只能是 0 或 1。
+                陣列長度必須為 200。
+                
+                輸出格式範例: [0, 1, 0, 1, 0, 0, 1, ...]
+            `;
+            
+            // For this simulation, we will use a simple rule-based mock classification instead of a heavy API call 
+            // since we don't have access to the actual 200 image contents.
+            await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate API loading time
+
+            // Mock Classification Logic
+            globalClassificationResults = Array(MAX_IMAGE_COUNT).fill(0).map(() => 
+                Math.random() < 0.25 ? 1 : 0 // 25% chance of being classified as "Anxious"
+            );
+
+            // 4. Save All Data (Settings + Experiment Results + Classification Results)
+            const finalData = {
+                filterData,
+                experimentDataSets,
+                globalClassificationResults,
+            };
+            await saveUserSettings(finalData);
+
+            // 5. Navigate to Thank You Page
+            experimentLoadingMessage.classList.add('hidden');
+            showPage('thankyou-page');
+            
+            // Enable Gallery Button
+            showFullResultsButton.disabled = false;
+            showFullResultsButton.classList.remove('disabled-button');
+        }
+
+        // --- GALLERY RENDERING & FILTERING ---
+        function renderGalleryImages(filtered = false) {
+            imageGallery.innerHTML = ''; 
+            const imagesToRender = uploadedGalleryDataUrls.length > 0 
+                ? uploadedGalleryDataUrls 
+                : generatePlaceholderDataUrls(MAX_IMAGE_COUNT);
+            
+            const classification = globalClassificationResults || Array(imagesToRender.length).fill(0).map(() => Math.random() < 0.25 ? 1 : 0);
+
+            let visibleCount = 0;
+
+            imagesToRender.forEach((src, index) => {
+                const isAnxious = classification[index] === 1;
+                
+                if (filtered && isAnxious) {
+                    // Skip 'anxious' images in filtered mode
+                    return; 
+                }
+                
+                visibleCount++;
+                const imgElement = document.createElement('img');
+                imgElement.src = src;
+                imgElement.className = `gallery-item ${isAnxious ? 'filtered' : 'safe'}`;
+                imgElement.loading = 'lazy';
+                imgElement.title = isAnxious ? `[AI 過濾] 可能引起焦慮` : `[AI 過濾] 安全內容`;
+                
+                imageGallery.appendChild(imgElement);
+            });
+            
+            galleryTitle.textContent = filtered ? `社群媒體內容模擬 (已過濾)` : `社群媒體內容模擬 (顯示所有內容)`;
+
+            if (visibleCount === 0) {
+                 imageGallery.innerHTML = '<p class="text-gray-500 col-span-full">圖庫中沒有圖片符合顯示條件。</p>';
+            }
+            
+            confirmFilterButton.classList.toggle('hidden', filtered);
+        }
+
+        // --- FILE HANDLING ---
+        anxietyExampleUpload.addEventListener('change', async (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                anxietyExampleLabelText.textContent = `已選擇: ${file.name}`;
+                anxietyExampleStatus.textContent = `圖片已載入，將用於 AI 焦慮特徵分析。`;
+            } else {
+                anxietyExampleLabelText.textContent = `點擊上傳讓您焦慮的單張範例圖片`;
+                anxietyExampleStatus.textContent = `尚未上傳範例圖片。`;
+            }
+        });
+
+        galleryUpload.addEventListener('change', async (e) => {
+            uploadedGalleryDataUrls = [];
+            if (e.target.files.length > 0) {
+                const files = Array.from(e.target.files).slice(0, MAX_IMAGE_COUNT);
+                galleryUploadLabelText.textContent = `已選擇 ${files.length} 張圖片 (上限 ${MAX_IMAGE_COUNT})`;
+                galleryUploadStatus.textContent = `正在處理圖片...`;
+                showFullResultsButton.disabled = true;
+                showFullResultsButton.classList.add('disabled-button');
+                
+                // Read files sequentially (or in parallel if optimized)
+                for (const file of files) {
+                    try {
+                        const dataUrl = await readFileAsDataUrl(file);
+                        uploadedGalleryDataUrls.push(dataUrl);
+                    } catch (error) {
+                        console.error("Error reading file:", file.name, error);
+                    }
+                }
+
+                galleryUploadStatus.textContent = `成功載入 ${uploadedGalleryDataUrls.length} 張圖片到模擬圖庫。`;
+                
+            } else {
+                galleryUploadLabelText.textContent = `點擊上傳多張照片到模擬圖庫`;
+                galleryUploadStatus.textContent = `尚未上傳任何圖片。`;
+            }
+            renderGalleryImages();
+            showFullResultsButton.disabled = !globalClassificationResults;
+            showFullResultsButton.classList.toggle('disabled-button', !globalClassificationResults);
+        });
+
+        // --- EVENT HANDLERS ---
+        
+        // Go to Gallery Button (Top) Handler
+        goToGalleryButtonTop.addEventListener('click', () => {
+             // Only show mock results if no experiment run yet
+             if (!globalClassificationResults) {
+                 globalClassificationResults = Array(MAX_IMAGE_COUNT).fill(0).map(() => 
+                    Math.random() < 0.25 ? 1 : 0 
+                );
+                // Temporarily enable for pre-experiment viewing
+                showFullResultsButton.disabled = false;
+                showFullResultsButton.classList.remove('disabled-button');
+             }
+             showPage('gallery-page');
+             renderGalleryImages(false);
+        });
+
+        startFilterButton.addEventListener('click', async () => {
+             // 1. Validate basic required inputs
+             const filterData = getFilterData();
+             if (!filterData.age || !filterData.gender || filterData.bodyParts.length === 0) {
+                 alert("請確保選擇了年齡、性別，並至少選擇一個在意的身體部位。");
+                 return;
+             }
+             
+             // 2. Prepare and navigate to experiment
+             await initializeExperiment();
+             showPage('experiment-page');
+        });
+
+        goToRatingButton.addEventListener('click', startRatingStep);
+        nextSetButton.addEventListener('click', nextExperimentSet);
+
+        backToSettingsButton.addEventListener('click', () => showPage('settings-page'));
+        backFromGalleryButton.addEventListener('click', () => showPage('thankyou-page'));
+        backToSettingsFromThankYouButton.addEventListener('click', () => showPage('settings-page'));
+        
+        goToGalleryFromThankYouSmall.addEventListener('click', (e) => {
+            if (!e.target.disabled) {
+                showPage('gallery-page');
+                renderGalleryImages(false);
+            }
+        });
+        
+        confirmFilterButton.addEventListener('click', () => {
+            renderGalleryImages(true);
+        });
+
+        showFullResultsButton.addEventListener('click', () => {
+            renderGalleryImages(false);
+        });
+        
+        fullscreenToggleButton.addEventListener('click', () => {
+            document.documentElement.requestFullscreen();
+        });
+
+        // Initial check and setup
+        // Call this once on load to populate the container if the user selects a part early
+        window.onload = () => {
+            renderGalleryImages();
+        };
+
+    </script>
+</body>
+</html>
