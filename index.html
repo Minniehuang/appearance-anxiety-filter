@@ -21,18 +21,21 @@
             backdrop-filter: blur(10px);
             border-radius: 2rem;
             padding: 1.5rem;
-            max-width: 500px; /* 預設手機寬度 */
+            /* 調整: 縮小主容器寬度 */
+            max-width: 450px; 
             width: 95%;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: max-width 0.3s;
         }
         @media (min-width: 768px) {
             .container {
-                max-width: 768px; 
+                /* 調整: 縮小桌面版寬度 */
+                max-width: 650px; 
             }
         }
         .container.gallery-view {
-            max-width: 800px;
+            /* 調整: 縮小圖庫檢視寬度 */
+            max-width: 750px;
         }
         .section-title {
             position: relative;
@@ -131,9 +134,10 @@
             color: #d32f2f;
         }
         .gallery {
+            /* 調整: 讓網格間距更大一點 */
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 0.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 0.6rem;
             margin-top: 1rem;
         }
         
@@ -216,6 +220,7 @@
         
         .gallery-item {
             width: 100%;
+            /* 保持高度限制 */
             height: 80px; 
             object-fit: cover;
             border-radius: 0.5rem;
@@ -424,15 +429,21 @@
                     您的個人化設定以及實驗數據已成功記錄，這對於我們訓練更符合您需求的容貌焦慮 AI 過濾器至關重要。
                 </p>
                 <p class="text-sm text-gray-600 font-medium">
-                    接下來，您可以前往圖庫查看 AI 根據您的設定所模擬的過濾結果。
+                    您現在可以回到設定頁面，或查看 AI 根據您的設定所模擬的過濾結果。
                 </p>
             </div>
 
+            <!-- MODIFIED: Changed the main action button -->
             <div class="mt-8 space-y-4">
-                <button id="go-to-gallery-from-thankyou" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full">
-                    查看個人化 AI 過濾圖庫 →
+                <button id="back-to-settings-from-thankyou" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full">
+                    返回設定頁面
                 </button>
             </div>
+            
+            <!-- NEW: Small link to the gallery -->
+            <button id="go-to-gallery-from-thankyou-small" class="text-sm text-purple-600 mt-4 hover:underline disabled-button" disabled>
+                或點此查看 AI 過濾結果 (圖庫)
+            </button>
         </div>
         
         <!-- Gallery Results Page (Page 3) -->
@@ -506,10 +517,11 @@
         const thankyouPage = document.getElementById('thankyou-page'); // Renamed from summaryPage
         
         const backToSettingsButton = document.getElementById('back-to-settings-button');
-        const backFromGalleryButton = document.getElementById('back-from-gallery-button'); // Now goes back to thankyou page
+        const backFromGalleryButton = document.getElementById('back-from-gallery-button'); 
 
-        // Thank You Elements (Renamed)
-        const goToGalleryFromThankYouButton = document.getElementById('go-to-gallery-from-thankyou');
+        // Thank You Elements (UPDATED)
+        const backToSettingsFromThankYouButton = document.getElementById('back-to-settings-from-thankyou');
+        const goToGalleryFromThankYouSmall = document.getElementById('go-to-gallery-from-thankyou-small');
         
         // SET COUNTER
         const setCounter = document.getElementById('set-counter');
@@ -565,6 +577,10 @@
                 mainContainer.classList.add('gallery-view');
             } else if (pageId === 'thankyou-page') { // Updated ID
                 thankyouPage.classList.remove('hidden-page');
+                // Ensure the gallery link is enabled if results exist
+                const isReady = !!globalClassificationResults;
+                goToGalleryFromThankYouSmall.disabled = !isReady;
+                goToGalleryFromThankYouSmall.classList.toggle('disabled-button', !isReady);
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1042,370 +1058,266 @@
                 experimentSelectionGrid.appendChild(wrapperDiv);
             });
             
-            // 3. Reset/Restore Control State for Step 1 (Selection)
-            
-            currentSetData.selections.forEach(mapIndex => {
-                const wrapper = experimentSelectionGrid.querySelector(`[data-map-index="${mapIndex}"]`);
-                if (wrapper) wrapper.classList.add('selected');
-            });
-            
-            updateSelectionStatus(currentSetData.selections.length);
-            
-            experimentSelectionGrid.removeEventListener('click', handleSelectionClick);
-            experimentSelectionGrid.removeEventListener('input', handleRatingChange);
-            experimentSelectionGrid.addEventListener('click', handleSelectionClick);
+            // 3. Reset Selection/Rating state and listener
+            currentSetData.selections = [];
+            currentSetData.ratings = Array(IMAGES_PER_SET).fill(4); // Reset ratings
+
+            updateSelectionStatus();
+            setupSelectionListener();
         }
 
-        function updateSelectionStatus(currentSelectionCount) {
-            selectionStatusText.textContent = `您已選擇 ${currentSelectionCount} 張 / 需選擇 ${MAX_SELECTION} 張`;
-            
-            const isReady = currentSelectionCount === MAX_SELECTION;
+        function updateSelectionStatus() {
+            const currentSetData = experimentDataSets[currentSetIndex];
+            const selectedCount = currentSetData.selections.length;
+            selectionStatusText.textContent = `您已選擇 ${selectedCount} 張 / 需選擇 ${MAX_SELECTION} 張`;
+
+            const isReady = selectedCount === MAX_SELECTION;
             goToRatingButton.disabled = !isReady;
             goToRatingButton.classList.toggle('disabled-button', !isReady);
-            goToRatingButton.textContent = `進入評分步驟 (已選擇 ${currentSelectionCount}/${MAX_SELECTION})`;
+            goToRatingButton.textContent = isReady ? '進入評分步驟' : `進入評分步驟 (已選擇 ${selectedCount}/${MAX_SELECTION})`;
+
+            // Update visual state of images
+            document.querySelectorAll('.selection-wrapper').forEach(wrapper => {
+                const mapIndex = parseInt(wrapper.getAttribute('data-map-index'));
+                if (currentSetData.selections.includes(mapIndex)) {
+                    wrapper.classList.add('selected');
+                } else {
+                    wrapper.classList.remove('selected');
+                }
+            });
         }
+        
+        function setupSelectionListener() {
+            document.querySelectorAll('.selection-wrapper').forEach(wrapper => {
+                wrapper.onclick = (event) => {
+                    const currentSetData = experimentDataSets[currentSetIndex];
+                    const mapIndex = parseInt(wrapper.getAttribute('data-map-index'));
+                    const isSelected = currentSetData.selections.includes(mapIndex);
 
-        function handleSelectionClick(event) {
-            const wrapper = event.target.closest('.selection-wrapper');
-            if (!wrapper) return;
-
-            const mapIndex = parseInt(wrapper.getAttribute('data-map-index'));
+                    if (isSelected) {
+                        // Deselect
+                        currentSetData.selections = currentSetData.selections.filter(index => index !== mapIndex);
+                    } else {
+                        // Select (if not maxed out)
+                        if (currentSetData.selections.length < MAX_SELECTION) {
+                            currentSetData.selections.push(mapIndex);
+                        } else {
+                            // Optionally, automatically replace the oldest selection
+                            // currentSetData.selections.shift();
+                            // currentSetData.selections.push(mapIndex);
+                        }
+                    }
+                    updateSelectionStatus();
+                };
+            });
+        }
+        
+        function setupRatingView() {
             const currentSetData = experimentDataSets[currentSetIndex];
-            let selections = currentSetData.selections;
-
-            // Only allow selection if rating controls are NOT visible (i.e., we are in step 1)
-            if (wrapper.querySelector('.rating-controls.visible')) return; 
-
-            const indexInArray = selections.indexOf(mapIndex);
-
-            if (indexInArray > -1) {
-                selections.splice(indexInArray, 1);
-                wrapper.classList.remove('selected');
-            } else if (selections.length < MAX_SELECTION) {
-                selections.push(mapIndex);
-                wrapper.classList.add('selected');
-            }
             
-            currentSetData.selections = selections; 
-            updateSelectionStatus(selections.length);
-        }
-
-        function renderRatingUI() {
-            const currentSetData = experimentDataSets[currentSetIndex];
-
-            // 1. UI Transition
+            // Change instructions and button visibility
             stepSelectionInstruction.classList.add('hidden');
             stepRatingInstruction.classList.remove('hidden');
             goToRatingButton.classList.add('hidden');
             
-            // Update Next Button Text
             if (currentSetIndex < MAX_EXPERIMENT_SETS - 1) {
                 nextSetButton.textContent = `進入下一組實驗 (第 ${currentSetIndex + 2} / ${MAX_EXPERIMENT_SETS} 組)`;
+                nextSetButton.classList.remove('hidden');
             } else {
-                nextSetButton.textContent = `完成所有實驗：前往致謝頁面`; // Updated text
+                nextSetButton.textContent = '完成所有實驗';
+                nextSetButton.classList.remove('hidden');
             }
-            nextSetButton.classList.remove('hidden');
-            
-            // 2. Prepare and Render Sliders
-            const imageWrappers = experimentSelectionGrid.querySelectorAll('.selection-wrapper'); 
 
-            imageWrappers.forEach((wrapper, index) => {
-                const imgElement = wrapper.querySelector('.selection-item');
-                const isSelected = currentSetData.selections.includes(index);
+            // Render ratings controls below images
+            document.querySelectorAll('.selection-wrapper').forEach((wrapper, mapIndex) => {
+                const initialRating = currentSetData.ratings[mapIndex];
                 
-                // Remove selection visual state (grayscale filter)
-                wrapper.classList.remove('selected');
+                // Add Rating Controls (Slider and label)
+                const controlsDiv = document.createElement('div');
+                controlsDiv.className = 'rating-controls visible';
+                controlsDiv.innerHTML = `
+                    <label class="block text-xs font-medium text-gray-700 mb-1">焦慮強度評分 (1-7)</label>
+                    <input type="range" min="1" max="7" value="${initialRating}" class="rating-slider" data-map-index="${mapIndex}">
+                    <div class="flex justify-between text-xs mt-1 text-gray-500 font-medium">
+                        <!-- UPDATED TEXT HERE -->
+                        <span>1 (完全不焦慮)</span>
+                        <span>${initialRating}</span>
+                        <span>7 (極度焦慮)</span>
+                    </div>
+                `;
                 
-                // Apply rating mode visual feedback and border
-                imgElement.classList.remove('border-4', 'border-transparent');
-                if (isSelected) {
-                    imgElement.classList.add('border-4', 'border-red-500'); // Highlight selected ones
-                } else {
-                     imgElement.classList.add('border-4', 'border-transparent');
-                }
+                const slider = controlsDiv.querySelector('.rating-slider');
+                const labelContainer = controlsDiv.querySelector('.justify-between span:nth-child(2)');
                 
-                // Create Rating Controls
-                let controls = wrapper.querySelector('.rating-controls');
-                if (!controls) {
-                    controls = document.createElement('div');
-                    controls.className = 'rating-controls w-full p-2';
-                    controls.innerHTML = `
-                        <input type="range" min="1" max="7" value="${currentSetData.ratings[index]}" class="rating-slider my-1" data-slider-index="${index}" />
-                        <div class="slider-label" data-rating-display="${index}">評分: ${currentSetData.ratings[index]} / 7</div>
-                        <div class="flex justify-between text-xs font-semibold text-gray-700 mt-1">
-                            <span>不焦慮 (1)</span>
-                            <span>極度焦慮 (7)</span>
-                        </div>
-                    `;
-                    wrapper.appendChild(controls);
-                } else {
-                     // Update slider value 
-                     controls.querySelector('.rating-slider').value = currentSetData.ratings[index];
-                     controls.querySelector('.slider-label').textContent = `評分: ${currentSetData.ratings[index]} / 7`;
-                }
-                
-                // Show controls
-                setTimeout(() => {
-                    controls.classList.add('visible');
-                }, 100); 
+                // Update the rating state on input
+                slider.oninput = (event) => {
+                    const value = parseInt(event.target.value);
+                    labelContainer.textContent = value;
+                    currentSetData.ratings[mapIndex] = value;
+                };
+
+                wrapper.appendChild(controlsDiv);
+                wrapper.onclick = null; // Disable selection click
             });
-
-            // 3. Update Listener: Remove selection listener, add rating listener
-            experimentSelectionGrid.removeEventListener('click', handleSelectionClick);
-            experimentSelectionGrid.removeEventListener('input', handleRatingChange);
-            experimentSelectionGrid.addEventListener('input', handleRatingChange);
-        }
-
-        function handleRatingChange(event) {
-            const slider = event.target.closest('.rating-slider');
-            if (!slider) return;
-            
-            const sliderIndex = parseInt(slider.getAttribute('data-slider-index')); // Index 0-8
-            const rating = parseInt(slider.value);
-            
-            const currentSetData = experimentDataSets[currentSetIndex];
-            currentSetData.ratings[sliderIndex] = rating;
-
-            const display = document.querySelector(`[data-rating-display="${sliderIndex}"]`);
-            if(display) {
-                display.textContent = `評分: ${rating} / 7`;
-            }
         }
         
-        // --- Main Page Flow Handlers ---
-
-        // Page 1 to Page 2 (Selection Step, Set 1)
-        startFilterButton.addEventListener('click', async function() {
-            if (uploadedGalleryDataUrls.length === 0) {
-                 uploadedGalleryDataUrls = generatePlaceholderDataUrls(MAX_IMAGE_COUNT);
-            }
-
-            showPage('experiment-page'); 
-            experimentLoadingMessage.classList.remove('hidden'); 
-            
-            startFilterButton.disabled = true;
-            startFilterButton.textContent = '分析中...';
-            startFilterButton.classList.add('disabled-button');
-            
-            let success = false;
-            try {
-                // 1. Run AI Classification (once for all images)
-                const classificationResult = await runAiClassification();
-                globalClassificationResults = classificationResult;
-
-                if (globalClassificationResults) {
-                    // 2. Setup the three 9-image sets
-                    setupExperimentSets(globalClassificationResults); 
-                    
-                    // 3. Start the first set (Index 0)
-                    prepareExperimentPage(0);
-                    success = true;
-                } else {
-                    console.error("AI 分類失敗: API 返回結果為空或格式錯誤。");
-                }
-            } catch (error) {
-                console.error("AI 分類發生錯誤，無法進行實驗。錯誤詳情:", error);
-            } finally {
-                experimentLoadingMessage.classList.add('hidden'); 
-
-                startFilterButton.disabled = false;
-                startFilterButton.textContent = '開始進行篩選 (準備實驗)';
-                startFilterButton.classList.remove('disabled-button');
-
-                if (!success) {
-                    console.warn("實驗準備失敗，已返回設定頁面。請檢查控制台錯誤訊息。");
-                    showPage('settings-page'); 
-                }
-            }
-        });
+        // --- Navigation and Action Listeners ---
         
-        // Page 2 Step 1 (Selection) to Page 2 Step 2 (Rating) - Within the same set
-        goToRatingButton.addEventListener('click', function() {
-            const currentSetData = experimentDataSets[currentSetIndex];
-            if (currentSetData && currentSetData.selections.length === MAX_SELECTION) {
-                renderRatingUI(); // 進入評分模式
-            }
-        });
-
-
-        // Page 2 Step 2 (Rating) to Next Set OR Finish (Go to Thank You Page)
-        nextSetButton.addEventListener('click', function() {
-            
-            if (currentSetIndex < MAX_EXPERIMENT_SETS - 1) {
-                // Advance to next set
-                currentSetIndex++;
-                prepareExperimentPage(currentSetIndex);
-            } else {
-                // All sets complete, proceed to Thank You Page (Page 4)
-                console.log("--- ALL EXPERIMENT DATA COLLECTED ---");
-                // The data is automatically saved in experimentDataSets
-                
-                showPage('thankyou-page'); // Show thank you page
-            }
-        });
-
-
-        // Page 1 to Page 3 (Direct to Gallery - no AI run)
-        goToGalleryButtonTop.addEventListener('click', function() {
-            showPage('gallery-page');
-            if (uploadedGalleryDataUrls.length === 0) {
-                 uploadedGalleryDataUrls = generatePlaceholderDataUrls(MAX_IMAGE_COUNT);
-                 renderGalleryImages();
-            }
-            showFullResultsButton.disabled = !globalClassificationResults;
-            showFullResultsButton.classList.toggle('disabled-button', !globalClassificationResults);
-            
-            feedbackMessage.classList.add('hidden');
-            confirmFilterButton.classList.add('hidden');
-        });
-
-        // Page 2 (Experiment) to Page 1 (Settings)
-        backToSettingsButton.addEventListener('click', function() {
-            showPage('settings-page');
-            // Reset experiment UI to clean state for next run
-            experimentSelectionGrid.innerHTML = '';
-            currentSetIndex = 0; // 重設組數
-        });
-
-        // NEW: Page 4 (Thank You) to Page 3 (Gallery)
-        goToGalleryFromThankYouButton.addEventListener('click', function() {
-            showPage('gallery-page');
-            
-            if (uploadedGalleryDataUrls.length === 0) {
-                 uploadedGalleryDataUrls = generatePlaceholderDataUrls(MAX_IMAGE_COUNT);
-                 renderGalleryImages();
-            }
-            
-            showFullResultsButton.disabled = !globalClassificationResults;
-            showFullResultsButton.classList.toggle('disabled-button', !globalClassificationResults);
-            
-            feedbackMessage.classList.add('hidden');
-            confirmFilterButton.classList.add('hidden');
-            showFullResultsButton.textContent = '顯示完整 AI 過濾結果'; // Reset button text
-        });
-
-        // Page 3 (Gallery) to Page 4 (Thank You)
-        backFromGalleryButton.addEventListener('click', function() {
-            showPage('thankyou-page');
-        });
-
-
-        // Page 3 Button: Show Full Filtered Results
-        showFullResultsButton.addEventListener('click', function() {
-            if (!globalClassificationResults) {
-                 console.error('請先在設定頁完成 AI 篩選步驟。');
-                 return;
-            }
-
-            const totalImages = globalClassificationResults.length; 
-            const allImages = imageGallery.querySelectorAll('.gallery-item');
-            let foundCount = 0;
-            
-            // Apply the pre-calculated results
-            for (let i = 0; i < totalImages; i++) {
-                const imgElement = allImages[i];
-                const filterStatus = globalClassificationResults[i];
-                
-                imgElement.classList.remove('filtered', 'safe', 'hidden-item');
-                imgElement.style.opacity = 1; 
-                imgElement.style.borderColor = 'transparent';
-                
-                if (filterStatus === 1) {
-                    imgElement.classList.add('filtered'); 
-                    foundCount++;
-                } else {
-                    imgElement.classList.add('safe'); 
-                }
-            }
-
-            galleryTitle.textContent = 'AI 篩選結果：可能引起焦慮的照片 (紅框標註)'; 
-            
-            const finalFeedbackText = `在模擬的 ${totalImages} 張圖片中，AI 找到了 ${foundCount} 張可能引起焦慮的圖片 (紅色邊框)。`;
-            feedbackMessage.textContent = finalFeedbackText;
-            feedbackMessage.classList.remove('hidden');
-
-            if (foundCount > 0) {
-                 feedbackMessage.classList.add('negative');
-                 feedbackMessage.classList.remove('positive');
-                 confirmFilterButton.classList.remove('hidden');
-            } else {
-                 feedbackMessage.classList.add('positive');
-                 feedbackMessage.classList.remove('negative');
-                 confirmFilterButton.classList.add('hidden');
-            }
-            
-            showFullResultsButton.textContent = '重新顯示完整過濾結果';
-        });
-        
-        // --- Confirm Filter Button Logic ---
-        confirmFilterButton.addEventListener('click', function() {
-            let hiddenCount = 0;
-            const images = imageGallery.querySelectorAll('.gallery-item');
-            
-            images.forEach(img => {
-                if (img.classList.contains('filtered')) {
-                    img.classList.add('hidden-item'); 
-                    hiddenCount++;
-                } else {
-                    img.classList.remove('safe');
-                    img.style.opacity = 1;
-                    img.style.borderColor = 'transparent';
-                }
-            });
-
-            galleryTitle.textContent = '已過濾結果：安全照片';
-            
-            feedbackMessage.textContent = `成功過濾了 ${hiddenCount} 張可能引起焦慮的圖片。目前只顯示安全照片。`;
-            feedbackMessage.classList.add('positive');
-            feedbackMessage.classList.remove('negative');
-            
-            confirmFilterButton.classList.add('hidden');
-        });
-        
-        // --- Fullscreen Logic ---
-        function toggleFullscreen() {
-            const docEl = document.documentElement;
-            const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-
-            if (!isFullscreen) {
-                if (docEl.requestFullscreen) {
-                    docEl.requestFullscreen();
-                } else if (docEl.mozRequestFullScreen) { 
-                    docEl.mozRequestFullScreen();
-                } else if (docEl.webkitRequestFullscreen) {
-                    docEl.webkitRequestFullscreen();
-                } else if (docEl.msRequestFullscreen) {
-                    docEl.msRequestFullscreen();
-                }
+        fullscreenToggleButton.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+                fullscreenToggleButton.textContent = '退出全螢幕';
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
-                } else if (document.mozCancelFullScreen) { 
-                    document.mozCancelFullScreen();
-                } else if (document.webkitExitFullscreen) { 
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) { 
-                    document.msExitFullscreen();
                 }
+                fullscreenToggleButton.textContent = '全螢幕模式';
             }
-        }
+        });
 
-        if (fullscreenToggleButton) {
-            fullscreenToggleButton.addEventListener('click', toggleFullscreen);
+        startFilterButton.addEventListener('click', async () => {
+             // 1. Show Loading
+             experimentLoadingMessage.classList.remove('hidden');
+             startFilterButton.disabled = true;
+             startFilterButton.textContent = '正在進行 AI 模擬分析...';
+             
+             // 2. AI Simulation
+             globalClassificationResults = await runAiClassification();
+             
+             // 3. Setup Experiment
+             setupExperimentSets(globalClassificationResults);
+             
+             // 4. Navigate
+             experimentLoadingMessage.classList.add('hidden');
+             showPage('experiment-page');
+             prepareExperimentPage(currentSetIndex);
+             
+             // 5. Reset Button State
+             startFilterButton.disabled = false;
+             startFilterButton.textContent = '開始進行篩選 (準備實驗)';
+        });
+        
+        goToGalleryButtonTop.addEventListener('click', () => {
+            if (globalClassificationResults) {
+                showPage('gallery-page');
+            } else {
+                 // Simulate default results if jumping directly
+                 runAiClassification().then(results => {
+                    globalClassificationResults = results;
+                    renderGalleryResults();
+                    showFullResultsButton.disabled = false;
+                    showFullResultsButton.classList.remove('disabled-button');
+                    backFromGalleryButton.textContent = '← 返回設定頁';
+                    showPage('gallery-page');
+                }).catch(() => {
+                    // Fallback to viewing the gallery without filtering applied
+                    showPage('gallery-page');
+                    backFromGalleryButton.textContent = '← 返回設定頁';
+                });
+            }
+        });
 
-            const updateFullscreenButtonText = () => {
-                 const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullscreenElement || document.msFullscreenElement;
-                 fullscreenToggleButton.textContent = isFullscreen ? '退出全螢幕' : '全螢幕模式';
-            };
-            document.addEventListener('fullscreenchange', updateFullscreenButtonText);
-            document.addEventListener('webkitfullscreenchange', updateFullscreenButtonText);
-            document.addEventListener('mozfullscreenchange', updateFullscreenButtonText);
-            document.addEventListener('msfullscreenchange', updateFullscreenButtonText);
+        backToSettingsButton.addEventListener('click', () => {
+            showPage('settings-page');
+        });
+        
+        backToSettingsFromThankYouButton.addEventListener('click', () => {
+            showPage('settings-page');
+        });
+        
+        goToGalleryFromThankYouSmall.addEventListener('click', () => {
+            renderGalleryResults();
+            showPage('gallery-page');
+        });
+
+        backFromGalleryButton.addEventListener('click', () => {
+            // Check where we came from. If experiment completed, go to thankyou. If direct jump, go to settings.
+            if (currentSetIndex === MAX_EXPERIMENT_SETS) {
+                showPage('thankyou-page');
+            } else {
+                 // If we haven't started or completed the experiment, go back to settings
+                showPage('settings-page');
+            }
+            confirmFilterButton.classList.add('hidden'); // Ensure the confirmation button is hidden when returning
+        });
+
+        goToRatingButton.addEventListener('click', () => {
+            setupRatingView();
+        });
+        
+        nextSetButton.addEventListener('click', () => {
+            currentSetIndex++;
+            if (currentSetIndex < MAX_EXPERIMENT_SETS) {
+                prepareExperimentPage(currentSetIndex);
+            } else {
+                // Experiment finished
+                currentSetIndex = MAX_EXPERIMENT_SETS; // Mark as finished
+                
+                // TEMP: For a real app, send all experimentDataSets to the backend here!
+                console.log("Experiment Finished! All data collected:", experimentDataSets);
+                
+                // Navigate to Thank You Page
+                showPage('thankyou-page');
+            }
+        });
+        
+        showFullResultsButton.addEventListener('click', () => {
+             renderGalleryResults();
+        });
+        
+        confirmFilterButton.addEventListener('click', () => {
+             document.querySelectorAll('.gallery-item').forEach((img, index) => {
+                const isFiltered = globalClassificationResults[index] === 1;
+                img.classList.toggle('hidden-item', isFiltered);
+             });
+             feedbackMessage.textContent = '已過濾掉所有 AI 判定可能引起您焦慮的內容。';
+             feedbackMessage.classList.remove('hidden', 'negative');
+             feedbackMessage.classList.add('positive');
+             confirmFilterButton.classList.add('hidden');
+        });
+        
+        // --- Gallery Results Rendering ---
+
+        function renderGalleryResults() {
+            if (!globalClassificationResults) {
+                feedbackMessage.textContent = '錯誤：尚未執行 AI 模擬分析。請先返回設定頁進行分析。';
+                feedbackMessage.classList.remove('hidden', 'positive');
+                feedbackMessage.classList.add('negative');
+                document.getElementById('image-gallery').innerHTML = '';
+                return;
+            }
+            
+            // Ensure images are rendered before applying styles
+            renderGalleryImages();
+
+            document.querySelectorAll('.gallery-item').forEach((img, index) => {
+                const status = globalClassificationResults[index];
+                
+                img.classList.remove('filtered', 'safe', 'hidden-item');
+
+                if (status === 1) {
+                    img.classList.add('filtered'); // Red border for anxious
+                } else {
+                    img.classList.add('safe'); // Green border for safe
+                }
+            });
+            
+            feedbackMessage.classList.add('hidden');
+            confirmFilterButton.classList.remove('hidden');
+            showFullResultsButton.disabled = true;
+            showFullResultsButton.classList.add('disabled-button');
         }
 
         // --- Initialization ---
-        window.onload = function() {
+
+        window.onload = () => {
+            // Initial render of placeholder images in the gallery
             renderGalleryImages();
+            
+            // Set initial state
+            showPage('settings-page'); 
         };
     </script>
 </body>
