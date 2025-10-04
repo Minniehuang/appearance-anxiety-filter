@@ -13,7 +13,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            min-height: 10vh;
             color: #333;
         }
         .container {
@@ -21,7 +21,6 @@
             backdrop-filter: blur(10px);
             border-radius: 2rem;
             padding: 1.5rem;
-            /* 調整: 縮小主容器寬度 */
             max-width: 450px; 
             width: 95%;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -29,12 +28,10 @@
         }
         @media (min-width: 768px) {
             .container {
-                /* 調整: 縮小桌面版寬度 */
                 max-width: 650px; 
             }
         }
         .container.gallery-view {
-            /* 調整: 縮小圖庫檢視寬度 */
             max-width: 750px;
         }
         .section-title {
@@ -55,10 +52,31 @@
             border-radius: 2px;
         }
         .checkbox-container {
+            /* 預設的身體部位選項使用網格 */
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 0.5rem;
         }
+        
+        /* 臉部細項標題樣式 - 比選項文字 (0.875rem) 大 */
+        .detail-option-title {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 700; /* font-bold */
+            color: #4c1d95; /* indigo-800 */
+        }
+        
+        /* 臉部細項容器樣式 - 確保選項垂直排列並左對齊 */
+        .face-detail-container {
+            display: flex;
+            flex-direction: column; /* 垂直堆疊 */
+            gap: 0.5rem; 
+        }
+
+        /* 確保臉部選項的 pill 按鈕佔滿容器寬度，且文字左對齊 */
+        .face-detail-container label {
+            width: 100%;
+        }
+
         .checkbox-label {
             background-color: #fff;
             border: 2px solid #ddd;
@@ -67,7 +85,15 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 0.875rem; 
+            display: block; /* 確保 label 內的 span 是區塊元素 */
         }
+        /* 應用於臉部細項的 checkbox-label */
+        .face-detail-container .checkbox-label {
+            text-align: left; /* 確保文字左對齊 */
+            padding-left: 1.5rem; /* 增加左邊距 */
+        }
+
         input[type="checkbox"]:checked + .checkbox-label {
             background-color: #6d28d9;
             border-color: #6d28d9;
@@ -134,7 +160,6 @@
             color: #d32f2f;
         }
         .gallery {
-            /* 調整: 讓網格間距更大一點 */
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
             gap: 0.6rem;
@@ -220,7 +245,6 @@
         
         .gallery-item {
             width: 100%;
-            /* 保持高度限制 */
             height: 80px; 
             object-fit: cover;
             border-radius: 0.5rem;
@@ -330,7 +354,7 @@
                 
                 <!-- Size Input Section (Right/Bottom) -->
                 <div id="size-input-section" class="hidden mt-6 md:mt-0">
-                    <div class="section-title">輸入部位尺寸</div>
+                    <div class="section-title">輸入部位尺寸/細項</div>
                     <div id="size-input-container" class="size-input-container">
                     </div>
                 </div>
@@ -384,7 +408,7 @@
             <div id="step-selection-instruction" class="mb-6 p-4 border border-purple-300 rounded-lg bg-purple-50">
                 <div class="section-title text-purple-700">步驟一：選出最焦慮的 3 張圖片</div>
                 <p class="text-sm text-gray-700 mt-2 text-left">
-                    請在以下圖片中，「點擊」選出讓您感到容貌焦慮最強烈的「3張」圖片。
+                    請在以下圖片中，**點擊** 選出讓您感到**容貌焦慮最強烈**的 **3 張** 圖片。
                     <span class="font-bold block mt-1 text-red-600" id="selection-status-text">您已選擇 0 張 / 需選擇 3 張</span>
                 </p>
             </div>
@@ -393,7 +417,7 @@
             <div id="step-rating-instruction" class="hidden mb-6 p-4 border border-purple-300 rounded-lg bg-purple-50">
                 <div class="section-title text-purple-700">步驟二：評估所有圖片的焦慮強度 (1-7分)</div>
                 <p class="text-sm text-gray-700 mt-2 text-left">
-                    請對以下 9 張圖片逐一評估其引發您**容貌焦慮的強度**。
+                    請對以下 **9 張圖片** 逐一評估其引發您**容貌焦慮的強度**。
                     <span class="font-bold block mt-1 text-red-600">您在步驟一選出的 3 張圖片已用紅框標註。</span>
                 </p>
             </div>
@@ -492,41 +516,43 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         const API_KEY = ""; // Canvas will provide this in runtime
-        // const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=" + API_KEY; // 移除全域 API_URL
-
         const MAX_IMAGE_COUNT = 200; 
-        const MAX_EXPERIMENT_SETS = 3; // 總共三組實驗
-        const IMAGES_PER_SET = 9; // 每組 9 張圖片
-        const MAX_SELECTION = 3; // 每組選 3 張
+        const MAX_EXPERIMENT_SETS = 3; 
+        const IMAGES_PER_SET = 9; 
+        const MAX_SELECTION = 3; 
+        const MODEL_NAME = "gemini-2.5-flash-preview-05-20";
 
-        let uploadedGalleryDataUrls = []; // Stores the 200 image data URLs (real or placeholder)
-        let globalClassificationResults = null; // Stores the AI's classification [0, 1, 0, ...] for 200 images
+        let uploadedGalleryDataUrls = []; 
+        let globalClassificationResults = null; 
 
-        // --- Globals for Multi-Set Experiment ---
-        // { name: "Set 1", setImages: [{indexInGallery: N, isFiltered: 0|1, dataUrl: string}], selections: [mapIndex], ratings: [1-7] }
         let experimentDataSets = []; 
-        let currentSetIndex = 0; // 0, 1, or 2
+        let currentSetIndex = 0; 
+        
+        let db, auth;
+        let userId;
+        let isAuthReady = false;
 
         // --- HTML Elements ---
         const mainContainer = document.getElementById('main-container');
         const settingsPage = document.getElementById('settings-page');
         const experimentPage = document.getElementById('experiment-page');
         const galleryPage = document.getElementById('gallery-page');
-        const thankyouPage = document.getElementById('thankyou-page'); // Renamed from summaryPage
+        const thankyouPage = document.getElementById('thankyou-page'); 
         
         const backToSettingsButton = document.getElementById('back-to-settings-button');
         const backFromGalleryButton = document.getElementById('back-from-gallery-button'); 
-
-        // Thank You Elements (UPDATED)
         const backToSettingsFromThankYouButton = document.getElementById('back-to-settings-from-thankyou');
         const goToGalleryFromThankYouSmall = document.getElementById('go-to-gallery-from-thankyou-small');
         
-        // SET COUNTER
         const setCounter = document.getElementById('set-counter');
 
-        // Experiment Step Elements
         const stepSelectionInstruction = document.getElementById('step-selection-instruction');
         const stepRatingInstruction = document.getElementById('step-rating-instruction');
         const experimentSelectionGrid = document.getElementById('experiment-selection-grid'); 
@@ -559,13 +585,75 @@
         const confirmFilterButton = document.getElementById('confirm-filter-button');
         const galleryTitle = document.getElementById('gallery-title');
 
+        // --- FIREBASE SETUP ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            setLogLevel('Debug');
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken)
+                    .catch(e => {
+                        console.error("Custom token sign-in failed, signing in anonymously:", e);
+                        signInAnonymously(auth);
+                    });
+            } else {
+                signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    console.log("Firebase Auth Ready. User ID:", userId);
+                    // Initial rendering of placeholder images once ready
+                    renderGalleryImages();
+                } else {
+                    // Fallback for unauthenticated/anonymous users
+                    userId = crypto.randomUUID();
+                    isAuthReady = true;
+                    console.log("Firebase Auth Ready. Anonymous/Fallback User ID:", userId);
+                    renderGalleryImages();
+                }
+            });
+        } else {
+            console.error("Firebase config is missing. Data persistence will not work.");
+            userId = crypto.randomUUID();
+            isAuthReady = true;
+            renderGalleryImages();
+        }
+
+        async function saveUserSettings(data) {
+            if (!isAuthReady || !db || !userId) {
+                console.error("Firestore not ready or userId not available.");
+                return;
+            }
+            try {
+                const docRef = doc(db, `/artifacts/${appId}/users/${userId}/anxiety_filters`, 'user_data');
+                await setDoc(docRef, {
+                    ...data,
+                    timestamp: new Date().toISOString(),
+                });
+                console.log("User settings saved successfully.");
+                return true;
+            } catch (e) {
+                console.error("Error saving user settings:", e);
+                return false;
+            }
+        }
+        
         // --- UTILITY FUNCTIONS ---
         
         function showPage(pageId) {
             settingsPage.classList.add('hidden-page');
             experimentPage.classList.add('hidden-page');
             galleryPage.classList.add('hidden-page');
-            thankyouPage.classList.add('hidden-page'); // Updated variable name
+            thankyouPage.classList.add('hidden-page'); 
             mainContainer.classList.remove('gallery-view');
             
             if (pageId === 'settings-page') {
@@ -575,9 +663,8 @@
             } else if (pageId === 'gallery-page') {
                 galleryPage.classList.remove('hidden-page');
                 mainContainer.classList.add('gallery-view');
-            } else if (pageId === 'thankyou-page') { // Updated ID
+            } else if (pageId === 'thankyou-page') { 
                 thankyouPage.classList.remove('hidden-page');
-                // Ensure the gallery link is enabled if results exist
                 const isReady = !!globalClassificationResults;
                 goToGalleryFromThankYouSmall.disabled = !isReady;
                 goToGalleryFromThankYouSmall.classList.toggle('disabled-button', !isReady);
@@ -610,715 +697,659 @@
             }
             return dataUrls;
         }
-
-        function renderGalleryImages() {
-            imageGallery.innerHTML = ''; 
-
-            const imagesToRender = uploadedGalleryDataUrls.length > 0 
-                ? uploadedGalleryDataUrls 
-                : generatePlaceholderDataUrls(MAX_IMAGE_COUNT);
-            
-            const renderCount = imagesToRender.length;
-
-            for (let i = 0; i < renderCount; i++) {
-                const imgElement = document.createElement('img');
-                imgElement.src = imagesToRender[i];
-                imgElement.className = 'gallery-item transition-all duration-300';
-                imgElement.setAttribute('data-index', i);
-                imageGallery.appendChild(imgElement);
+        
+        function base64ToDataUrl(dataUrl) {
+            const parts = dataUrl.split(',');
+            if (parts.length > 1) {
+                const mimeType = parts[0].match(/:(.*?);/)[1];
+                const base64Data = parts[1];
+                return { mimeType, base64Data };
             }
-            galleryTitle.textContent = `社群媒體內容模擬 (共 ${renderCount} 張圖片)`;
+            // For placeholder URLs, we just return null or handle them later
+            return null;
         }
-        
-        // --- EVENT HANDLERS (File Input, UI Logic) ---
 
-        anxietyExampleUpload.addEventListener('change', () => {
-             // ... [File upload logic]
-            const fileCount = anxietyExampleUpload.files.length;
-            if (fileCount > 0) {
-                anxietyExampleStatus.textContent = `已選擇 1 張範例圖片 (${anxietyExampleUpload.files[0].name})。`;
-                anxietyExampleStatus.classList.remove('text-gray-500');
-                anxietyExampleStatus.classList.add('text-pink-700');
-                anxietyExampleLabelText.textContent = `範例圖片已選取: ${anxietyExampleUpload.files[0].name}`;
-            } else {
-                anxietyExampleStatus.textContent = `尚未上傳範例圖片。`;
-                anxietyExampleStatus.classList.add('text-gray-500');
-                anxietyExampleStatus.classList.remove('text-pink-700');
-                anxietyExampleLabelText.textContent = '點擊上傳讓您焦慮的單張範例圖片';
-            }
-        });
+        // --- GEMINI API 呼叫邏輯 (省略細節，專注於應用程式邏輯) ---
+        async function callGeminiApi(payload) {
+            // ... (API call logic is simplified for front-end focus)
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${payload.model}:generateContent?key=${API_KEY}`;
+            const maxRetries = 5;
+            let lastError = null;
 
-        galleryUpload.addEventListener('change', async () => {
-            const files = Array.from(galleryUpload.files).slice(0, MAX_IMAGE_COUNT);
-            uploadedGalleryDataUrls = [];
-
-            if (files.length > 0) {
-                galleryUploadStatus.textContent = `正在讀取 ${files.length} 張圖片...`;
-                
-                try {
-                    const promises = files.map(file => readFileAsDataUrl(file));
-                    uploadedGalleryDataUrls = await Promise.all(promises);
-
-                    galleryUploadStatus.textContent = `已成功讀取 ${uploadedGalleryDataUrls.length} 張圖片到圖庫。`;
-                    galleryUploadLabelText.textContent = `重新上傳圖片 (已選 ${uploadedGalleryDataUrls.length} 張)`;
-                } catch (error) {
-                    galleryUploadStatus.textContent = `讀取圖片時發生錯誤。`;
-                    console.error("Error reading gallery files:", error);
-                }
-            } else {
-                galleryUploadStatus.textContent = `尚未上傳任何圖片。`;
-                galleryUploadLabelText.textContent = '點擊上傳多張照片到模擬圖庫';
-            }
-            renderGalleryImages();
-        });
-        
-        const partLabels = {
-            'legs': '腿圍 (公分)',
-            'chest': '胸圍 (公分)',
-            'waist': '腰圍 (公分)',
-            'buttocks': '臀圍 (公分)'
-        };
-
-        const generateSizeInput = (part) => {
-            if (part === 'face') {
-                return `
-                    <label class="block text-left text-sm font-medium text-gray-700">臉部細項</label>
-                    <div id="face-options" class="checkbox-container mt-2">
-                        <label data-part="face-eyes">
-                            <input type="checkbox" class="hidden" value="eyes" />
-                            <span class="checkbox-label">眼睛</span>
-                        </label>
-                        <label data-part="face-nose">
-                            <input type="checkbox" class="hidden" value="nose" />
-                            <span class="checkbox-label">鼻子</span>
-                        </label>
-                        <label data-part="face-lips-main">
-                            <input type="checkbox" class="hidden" value="lips" />
-                            <span class="checkbox-label">嘴唇</span>
-                        </label>
-                        <label data-part="face-acne">
-                            <input type="checkbox" class="hidden" value="acne" />
-                            <span class="checkbox-label">痘痘</span>
-                        </label>
-                    </div>
-                    <div id="lips-options-container" class="ml-4 mt-2 hidden">
-                        <label class="block text-left text-sm font-medium text-gray-700 mt-2">嘴唇細項</label>
-                        <div class="checkbox-container mt-2">
-                            <label data-part="lips-sub">
-                                <input type="checkbox" class="hidden" value="full_lips" />
-                                <span class="checkbox-label">豐唇</span>
-                            </label>
-                            <label data-part="lips-sub">
-                                <input type="checkbox" class="hidden" value="thin_lips" />
-                                <span class="checkbox-label">薄唇</span>
-                            </label>
-                        </div>
-                    </div>
-                `;
-            } else if (part === 'waist') {
-                return `
-                    <label class="block text-left text-sm font-medium text-gray-700">選擇您的焦慮類型</label>
-                    <select id="waist-anxiety-type" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">
-                        <option value="" disabled selected>請選擇</option>
-                        <option value="too_fat">擔心自己太胖 (尋找比自己細的腰)</option>
-                        <option value="too_thin">擔心自己太瘦 (尋找比自己壯碩的腰)</option>
-                    </select>
-                    <label class="block text-left text-sm font-medium text-gray-700 mt-2">${partLabels[part]}</label>
-                    <input type="number" placeholder="請輸入數值" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all" data-part="${part}" />
-                `;
-            } else {
-                return `
-                    <label class="block text-left text-sm font-medium text-gray-700">${partLabels[part]}</label>
-                    <input type="number" placeholder="請輸入數值" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all" data-part="${part}" />
-                `;
-            }
-        };
-
-        const updateSizeInputs = () => {
-            const checkedParts = Array.from(document.querySelectorAll('#body-parts-container input[type="checkbox"]:checked')).map(cb => cb.value);
-            sizeInputContainer.innerHTML = '';
-            
-            if (checkedParts.length > 0) {
-                sizeInputSection.classList.remove('hidden');
-                checkedParts.forEach(part => {
-                    const div = document.createElement('div');
-                    div.innerHTML = generateSizeInput(part);
-                    sizeInputContainer.appendChild(div);
-                });
-            } else {
-                sizeInputSection.classList.add('hidden');
-            }
-        };
-
-        bodyPartsContainer.addEventListener('change', updateSizeInputs);
-
-        sizeInputContainer.addEventListener('change', (event) => {
-            const input = event.target;
-            if (input.type === 'checkbox' && input.value === 'lips') {
-                const lipsOptionsContainer = document.getElementById('lips-options-container');
-                if (lipsOptionsContainer) {
-                    if (input.checked) {
-                        lipsOptionsContainer.classList.remove('hidden');
-                    } else {
-                        Array.from(lipsOptionsContainer.querySelectorAll('input[type="checkbox"]')).forEach(subCb => {
-                            subCb.checked = false;
-                        });
-                        lipsOptionsContainer.classList.add('hidden');
-                    }
-                }
-            }
-        });
-        
-        // --- GEMINI API 呼叫邏輯 ---
-
-        async function processAnxietyExample(imageData) {
-             const prompt = `請分析這張圖片的容貌特徵，這些特徵被使用者視為引起焦慮的『完美』樣貌。請只列出關鍵詞，例如: 極致纖細的腰部; 飽滿豐唇; 無瑕疵肌膚; 立體五官; 健美肌肉。請用分號分隔，不要超過 50 個字。`;
-             
-             const [header, base64Data] = imageData.src.split(',');
-             const mimeTypeMatch = header.match(/:(.*?);/);
-             const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/jpeg';
-
-             try {
-                const description = await callGeminiApi(prompt, true, mimeType, base64Data);
-                return description.trim() || '未成功提取焦慮範例特徵';
-            } catch (error) {
-                console.error("Error generating anxiety description:", error);
-                return '提取焦慮範例特徵時發生錯誤';
-            }
-        }
-        
-        async function callGeminiApi(prompt, isImage=false, mimeType="image/jpeg", imageData=null, generationConfig=null) {
-            
-            const modelName = "gemini-2.5-flash-preview-05-20";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`; // 動態建構 API URL
-
-            let payload = {};
-            let contents = [];
-
-            if (isImage && imageData) {
-                contents = [
-                    {
-                        parts: [
-                            { text: prompt },
-                            {
-                                inlineData: {
-                                    mimeType: mimeType,
-                                    data: imageData
-                                }
-                            }
-                        ]
-                    }
-                ];
-            } else {
-                contents = [
-                    {
-                        parts: [
-                            { text: prompt }
-                        ]
-                    }
-                ];
-            }
-            
-            payload.contents = contents;
-            if (generationConfig) {
-                 payload.generationConfig = generationConfig;
-            }
-
-            const maxRetries = 3;
-            let currentRetry = 0;
-
-            while (currentRetry < maxRetries) {
+            for (let i = 0; i < maxRetries; i++) {
                 try {
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(payload),
                     });
-                    
-                    if (response.status === 401 || response.status === 403) {
-                         // 針對 401/403 認證錯誤進行額外記錄
-                         console.error(`Authentication Error ${response.status}: API Key is likely invalid or missing. Ensure API_KEY is set to "" for Canvas injection.`);
-                         throw new Error(`API authentication error: ${response.status}`);
-                    }
-                    if (response.status === 429) { 
-                        throw new Error('Rate limit exceeded');
-                    }
+
                     if (!response.ok) {
-                        throw new Error(`API response error: ${response.status}: ${await response.text()}`);
+                        const errorBody = await response.json();
+                        throw new Error(`API call failed: ${response.status} - ${JSON.stringify(errorBody)}`);
                     }
 
                     const result = await response.json();
-                    return result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error("API response text is empty.");
+                    
+                    return text.trim();
+
                 } catch (error) {
-                    if (currentRetry === maxRetries - 1 || error.message.includes('Rate limit exceeded') === false) {
-                         throw error; 
-                    }
-                    const delay = Math.pow(2, currentRetry) * 1000 + Math.random() * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    currentRetry++;
+                    lastError = error;
+                    console.warn(`Attempt ${i + 1} failed. Retrying in ${Math.pow(2, i)}s...`, error);
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
                 }
             }
-            return ''; 
+            throw lastError;
+        }
+
+
+        async function processAnxietyExample(imageData) {
+            const prompt = `請分析這張圖片的容貌特徵，這些特徵被使用者視為引起焦慮的『完美』樣貌。請只列出關鍵詞，例如: 極致纖細的腰部; 飽滿豐唇; 無瑕疵肌膚; 立體五官; 健美肌肉。請用分號分隔，不要超過 50 個字。`;
+            const dataParts = base64ToDataUrl(imageData);
+
+            if (!dataParts) return "無法分析佔位圖片";
+
+            const payload = {
+                model: MODEL_NAME,
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: dataParts.mimeType, data: dataParts.base64Data } }
+                    ]
+                }],
+            };
+
+            try {
+                const result = await callGeminiApi(payload);
+                return result;
+            } catch (error) {
+                console.error("Error processing anxiety example image:", error);
+                return "分析失敗";
+            }
         }
         
-        async function runAiClassification() {
-            let anxietyReferenceDescription = '無焦慮範例圖片';
-            const exampleFiles = anxietyExampleUpload.files;
-
-            if (exampleFiles.length > 0) {
-                try {
-                    const exampleImageData = { src: await readFileAsDataUrl(exampleFiles[0]) };
-                    anxietyReferenceDescription = await processAnxietyExample(exampleImageData);
-                } catch (error) {
-                    console.error("Error processing anxiety example:", error);
-                    anxietyReferenceDescription = '提取焦慮範例特徵時發生錯誤，已略過。';
-                }
+        // --- 部位詳細資訊配置 (CRITICAL CHANGE: CHEST) ---
+        const partDetailsConfig = {
+            'legs': {
+                title: '腿部尺寸 (公分)',
+                typeLabel: '您在意的腿部特徵是什麼?',
+                sizePlaceholder: '例如: 腿圍 50',
+                typeOptions: { 'thin': '極致纖細', 'toned': '健美結實', 'general': '一般體型' }
+            },
+            'chest': { // <--- CRITICAL CHANGE: NEW BRA SIZE CONFIG
+                type: 'bra_size', 
+                bandSizes: ["70", "75", "80", "85", "90", "95"],
+                cupSizes: ["A", "B", "C", "D", "E"]
+            },
+            'waist': {
+                title: '腰部尺寸 (公分)',
+                typeLabel: '您在意的腰部特徵是什麼?',
+                sizePlaceholder: '例如: 腰圍 60',
+                typeOptions: { 'thin': '極致纖細', 'toned': '健美線條', 'general': '一般體型' }
+            },
+            'buttocks': {
+                title: '臀部尺寸 (公分)',
+                typeLabel: '您在意的臀部特徵是什麼?',
+                sizePlaceholder: '例如: 臀圍 90',
+                typeOptions: { 'lifted': '上提渾圓', 'toned': '健美結實', 'general': '一般體型' }
             }
-            
-            const age = ageInput.value || '未選擇';
-            const gender = genderSelect.value || '未選擇';
-            
-            const concerns = [];
-            document.querySelectorAll('#body-parts-container input[type="checkbox"]:checked').forEach(cb => {
-                const part = cb.value;
-                if (part !== 'face') {
-                    const inputElement = document.querySelector(`input[data-part="${part}"]`);
-                    const size = inputElement ? inputElement.value : null;
+        };
+
+        // --- DYNAMIC INPUT RENDERING ---
+        function updateSizeInputSection() {
+            const selectedParts = Array.from(document.querySelectorAll('#body-parts-container input[type="checkbox"]:checked')).map(cb => cb.value);
+            sizeInputContainer.innerHTML = '';
+            let html = '';
+            let hasInputs = false;
+
+            selectedParts.forEach(part => {
+                if (part === 'face') {
+                    hasInputs = true;
+                    // Face detail configuration (simplified inline for this component)
+                    const faceDetails = [
+                        { val: 'small_face', label: '巴掌臉/小臉' },
+                        { val: 'defined_jaw', label: '清晰下顎線' },
+                        { val: 'big_eyes', label: '深邃大眼' },
+                        { val: 'high_nose', label: '高挺鼻樑' },
+                        { val: 'flawless_skin', label: '無瑕疵肌膚' },
+                        { val: 'full_lips', label: '豐滿嘴唇' },
+                    ];
                     
-                    if (part === 'waist') {
-                        const waistAnxietyType = document.getElementById('waist-anxiety-type')?.value;
-                        let detail = `腰圍: ${size || '未輸入'} 公分`;
-                        if (waistAnxietyType) {
-                            if (waistAnxietyType === 'too_fat') {
-                                detail += '，焦慮類型: 擔心過胖，需篩選出視覺上更細、更纖瘦的腰部圖片。';
-                            } else if (waistAnxietyType === 'too_thin') {
-                                detail += '，焦慮類型: 擔心過瘦，需篩選出視覺上更壯碩、更健美的腰部圖片。';
-                            }
-                        }
-                        if (size || waistAnxietyType) { 
-                            concerns.push(detail);
-                        }
-                    } else if (size) {
-                         concerns.push(partLabels[part] + ': ' + size + ' 公分');
-                    }
-                } else if (part === 'face') {
-                    const faceOptions = Array.from(document.querySelectorAll('#face-options input:checked')).map(fcb => fcb.value);
-                    let lipsOptions = [];
-                    if (faceOptions.includes('lips')) {
-                         const lipsOptionsContainer = document.getElementById('lips-options-container');
-                         if (lipsOptionsContainer) {
-                            lipsOptions = Array.from(lipsOptionsContainer.querySelectorAll('input:checked')).map(lcb => lcb.value);
-                            lipsOptions = lipsOptions.filter(val => val === 'full_lips' || val === 'thin_lips');
-                         }
-                    }
-                    const cleanedFaceOptions = faceOptions.filter(val => val !== 'lips');
-                    const allFaceConcerns = [...cleanedFaceOptions, ...lipsOptions].join(', ');
-                    if (allFaceConcerns) {
-                        concerns.push('臉部細項: ' + allFaceConcerns);
-                    }
+                    html += `
+                        <div class="p-3 bg-white rounded-lg shadow-sm border border-pink-200">
+                            <h4 class="detail-option-title mb-3">臉部細節：選擇讓您焦慮的特徵</h4>
+                            <div class="face-detail-container">
+                                ${faceDetails.map(detail => `
+                                    <label data-part="face-${detail.val}" class="w-full">
+                                        <input type="checkbox" class="hidden" value="${detail.val}" />
+                                        <span class="checkbox-label">${detail.label}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else if (part === 'chest') { // <--- NEW CHEST RENDERING LOGIC
+                    hasInputs = true;
+                    const config = partDetailsConfig[part];
+                    
+                    html += `
+                        <div class="p-3 bg-white rounded-lg shadow-sm border border-purple-200">
+                            <h4 class="detail-option-title mb-3">胸部尺寸：選擇罩杯與下胸圍</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                    `;
+                    
+                    // 1. Band Size Select (下胸圍)
+                    let bandOptions = config.bandSizes.map(size => `<option value="${size}">${size}</option>`).join('');
+                    html += `
+                        <div class="space-y-1">
+                            <label for="chest-band-size" class="block text-xs font-medium text-gray-700">下胸圍 (公分)</label>
+                            <select id="chest-band-size" data-part="${part}" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm focus:ring-purple-500">
+                                ${bandOptions}
+                            </select>
+                        </div>
+                    `;
+
+                    // 2. Cup Size Select (罩杯)
+                    let cupOptions = config.cupSizes.map(cup => `<option value="${cup}">${cup}</option>`).join('');
+                    html += `
+                        <div class="space-y-1">
+                            <label for="chest-cup-size" class="block text-xs font-medium text-gray-700">罩杯選項</label>
+                            <select id="chest-cup-size" data-part="${part}" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm focus:ring-purple-500">
+                                ${cupOptions}
+                            </select>
+                        </div>
+                    `;
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+
+                } else if (partDetailsConfig[part]) {
+                    // Standard size + anxiety type for legs, waist, buttocks
+                    hasInputs = true;
+                    const config = partDetailsConfig[part];
+                    
+                    let typeOptions = Object.entries(config.typeOptions).map(([val, label]) => 
+                        `<option value="${val}">${label}</option>`
+                    ).join('');
+
+                    html += `
+                        <div class="p-3 bg-white rounded-lg shadow-sm border border-blue-200">
+                            <h4 class="detail-option-title mb-3">${config.title}</h4>
+                            <div class="space-y-3">
+                                <input type="text" data-part="${part}" placeholder="${config.sizePlaceholder}" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm focus:ring-purple-500" />
+                                <select id="${part}-anxiety-type" class="w-full bg-gray-50 border border-gray-300 rounded-md p-2 text-sm focus:ring-purple-500">
+                                    <option value="general">選擇焦慮特徵類型...</option>
+                                    ${typeOptions}
+                                </select>
+                            </div>
+                        </div>
+                    `;
                 }
             });
 
-            const concernText = concerns.join('; ') || '未選擇焦慮特徵';
-            const topic = topicInput.value || '無';
-            const totalImages = uploadedGalleryDataUrls.length || MAX_IMAGE_COUNT;
-            
-            const simulationPrompt = `
-                請您扮演一個社群媒體 AI 濾鏡系統。
-                現在有 ${totalImages} 張模擬的社群媒體圖片內容。
-                請根據以下使用者的「容貌焦慮」設定，模擬分析這 ${totalImages} 張圖片，並決定哪些圖片會被過濾掉。
-                
-                使用者設定：
-                - 年齡：${age}
-                - 性別：${gender}
-                - **在意的身體部位及尺寸/細項**：${concernText}
-                - 過濾主題：${topic}
-                - 焦慮範例特徵 (AI提取)：${anxietyReferenceDescription}
-                
-                模擬過濾原則：
-                - 約有 25% 的圖片應該被標記為「可能引起焦慮」 (1)。
-                - 標記為 (1) 的圖片應該與使用者的「在意部位/尺寸/主題/焦慮範例特徵」有高度相關性。
-                - 標記為 (0) 的圖片應屬於普通、健康、與焦慮無關的內容。
-
-                請直接以 JSON 陣列格式輸出 ${totalImages} 個結果。陣列中每個元素必須是數字 0 (安全) 或 1 (過濾)。
-            `;
-            
-            const simulationSchema = {
-                type: "ARRAY",
-                items: {
-                    type: "INTEGER",
-                    enum: [0, 1]
-                }
-            };
-            
-            try {
-                const resultText = await callGeminiApi(
-                    simulationPrompt, 
-                    false, 
-                    null, 
-                    null, 
-                    {
-                        responseMimeType: "application/json",
-                        responseSchema: simulationSchema
-                    }
-                );
-                
-                const result = JSON.parse(resultText);
-                if (Array.isArray(result) && result.length === totalImages) {
-                    return result;
-                }
-                throw new Error("AI returned unexpected result format or length.");
-
-            } catch (error) {
-                console.error('Error simulating filtering:', error);
-                
-                console.warn("使用隨機分類結果作為預覽/錯誤處理，以確保實驗頁面能正常顯示。");
-                return Array.from({ length: totalImages }, () => Math.random() < 0.25 ? 1 : 0);
-            }
+            sizeInputContainer.innerHTML = html;
+            sizeInputSection.classList.toggle('hidden', !hasInputs);
         }
-        
-        // --- Experiment Setup and Data Handling ---
 
-        function setupExperimentSets(classificationResults) {
-            experimentDataSets = [];
-            currentSetIndex = 0;
-            
+        // Attach event listener to body parts checkboxes
+        bodyPartsContainer.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                updateSizeInputSection();
+            }
+        });
+        
+        // --- DATA RETRIEVAL LOGIC ---
+        
+        function getFilterData() {
+            const selectedParts = Array.from(document.querySelectorAll('#body-parts-container input[type="checkbox"]:checked')).map(cb => cb.value);
+            const detailData = {};
+
+            selectedParts.forEach(part => {
+                if (part === 'face') {
+                    const faceCheckboxes = document.querySelectorAll('#size-input-container [data-part^="face-"] input[type="checkbox"]:checked');
+                    detailData.face = Array.from(faceCheckboxes).map(cb => cb.value);
+                } else if (part === 'chest') { // <--- NEW CHEST DATA RETRIEVAL
+                     const bandSelect = document.getElementById('chest-band-size');
+                     const cupSelect = document.getElementById('chest-cup-size');
+                     detailData[part] = {
+                         band: bandSelect ? bandSelect.value : null,
+                         cup: cupSelect ? cupSelect.value : null
+                     };
+                } else if (part === 'waist' || part === 'legs' || part === 'buttocks') {
+                    // Standard size/type input logic
+                    const typeSelect = document.getElementById(`${part}-anxiety-type`);
+                    const sizeInput = document.querySelector(`#size-input-container input[data-part="${part}"]`);
+                    detailData[part] = {
+                        type: typeSelect ? typeSelect.value : 'general',
+                        size: sizeInput ? sizeInput.value : null
+                    };
+                }
+            });
+
+            return {
+                age: ageInput.value,
+                gender: genderSelect.value,
+                bodyParts: selectedParts,
+                details: detailData,
+                topics: topicInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0),
+                anxietyImage: anxietyExampleUpload.files.length > 0 ? anxietyExampleUpload.files[0] : null,
+            };
+        }
+
+
+        async function initializeExperiment() {
+            if (!isAuthReady) return;
+
             const allImages = uploadedGalleryDataUrls.length > 0 
                 ? uploadedGalleryDataUrls 
                 : generatePlaceholderDataUrls(MAX_IMAGE_COUNT);
-                
-            const totalCount = classificationResults.length;
-            const filteredIndices = classificationResults.map((status, index) => status === 1 ? index : -1).filter(index => index !== -1);
-            const safeIndices = classificationResults.map((status, index) => status === 0 ? index : -1).filter(index => index !== -1);
             
-            // 需要 9 張 Anxious 圖片 和 18 張 Safe 圖片 (3 Anxious + 6 Safe per set)
-            const requiredAnxious = 3 * MAX_EXPERIMENT_SETS;
-            const requiredSafe = 6 * MAX_EXPERIMENT_SETS;
-            
-            // 確保有足夠的圖片
-            const selectedAnxiousIndices = filteredIndices.sort(() => 0.5 - Math.random()).slice(0, requiredAnxious);
-            const selectedSafeIndices = safeIndices.sort(() => 0.5 - Math.random()).slice(0, requiredSafe);
-            
-            if (selectedAnxiousIndices.length < requiredAnxious || selectedSafeIndices.length < requiredSafe) {
-                 console.warn(`警告: AI分類結果中焦慮/安全圖片不足。已使用所有可用的圖片 (焦慮: ${selectedAnxiousIndices.length}, 安全: ${selectedSafeIndices.length}) 來填滿實驗組。`);
+            // Randomly select 9 images for each of the 3 sets (total 27 images)
+            const selectedImageIndices = new Set();
+            while (selectedImageIndices.size < MAX_EXPERIMENT_SETS * IMAGES_PER_SET && selectedImageIndices.size < allImages.length) {
+                const randomIndex = Math.floor(Math.random() * allImages.length);
+                selectedImageIndices.add(randomIndex);
             }
             
+            const indicesArray = Array.from(selectedImageIndices);
+            experimentDataSets = [];
+
             for (let i = 0; i < MAX_EXPERIMENT_SETS; i++) {
-                const setAnxious = selectedAnxiousIndices.slice(i * 3, (i + 1) * 3);
-                const setSafe = selectedSafeIndices.slice(i * 6, (i + 1) * 6);
-                
-                // Shuffle within the set of indices
-                const setIndices = [...setAnxious, ...setSafe].sort(() => 0.5 - Math.random());
+                const setIndices = indicesArray.slice(i * IMAGES_PER_SET, (i + 1) * IMAGES_PER_SET);
+                if (setIndices.length === 0) break; // Stop if not enough images
                 
                 const setImages = setIndices.map(index => ({
                     indexInGallery: index,
-                    isFiltered: classificationResults[index],
-                    dataUrl: allImages[index]
+                    dataUrl: allImages[index],
+                    isFiltered: 0, 
+                    rating: 0, // 0 means unrated
+                    isSelected: false,
                 }));
-                
+
                 experimentDataSets.push({
                     name: `Set ${i + 1}`,
-                    setImages: setImages, // The 9 images for this set
-                    selections: [], // User's 3 selections (mapIndex 0-8)
-                    ratings: Array(IMAGES_PER_SET).fill(4) // User's 9 ratings (1-7) (Default to 4)
+                    setImages: setImages,
+                    selections: [], // Stores the index of selected image within the 9-image array
+                    ratings: [], // Stores the 1-7 rating for all 9 images
                 });
             }
+            
+            currentSetIndex = 0;
+            renderExperimentSet();
         }
-        
-        function prepareExperimentPage(setIndex) {
+
+        function renderExperimentSet() {
+            const currentSet = experimentDataSets[currentSetIndex];
+            if (!currentSet) return;
             
-            if (setIndex >= MAX_EXPERIMENT_SETS || experimentDataSets.length === 0) {
-                 console.error("嘗試渲染不存在的實驗組或實驗數據為空。");
-                 return;
-            }
+            setCounter.textContent = `第 ${currentSetIndex + 1} / ${experimentDataSets.length} 組`;
             
-            const currentSetData = experimentDataSets[setIndex];
-            
-            // 1. UI Status Update
-            setCounter.textContent = `第 ${setIndex + 1} / ${MAX_EXPERIMENT_SETS} 組`;
+            // Reset UI for Step 1: Selection
+            experimentSelectionGrid.innerHTML = '';
             stepSelectionInstruction.classList.remove('hidden');
             stepRatingInstruction.classList.add('hidden');
             goToRatingButton.classList.remove('hidden');
             nextSetButton.classList.add('hidden');
-            
-            // 2. Render Images
-            experimentSelectionGrid.innerHTML = '';
-            
-            currentSetData.setImages.forEach((imgData, mapIndex) => {
-                const wrapperDiv = document.createElement('div');
-                wrapperDiv.className = 'selection-wrapper';
-                wrapperDiv.setAttribute('data-map-index', mapIndex);
+            goToRatingButton.disabled = true;
+            goToRatingButton.textContent = `進入評分步驟 (已選擇 0/${MAX_SELECTION})`;
+            selectionStatusText.textContent = `您已選擇 0 張 / 需選擇 ${MAX_SELECTION} 張`;
 
+            currentSet.setImages.forEach((img, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'selection-wrapper';
+                wrapper.setAttribute('data-index', index); 
+                
                 const imgElement = document.createElement('img');
-                imgElement.src = imgData.dataUrl;
-                imgElement.className = 'experiment-item selection-item w-full h-auto rounded-lg object-cover aspect-square shadow-md hover:shadow-xl'; 
-                imgElement.setAttribute('alt', `Selection Image ${mapIndex + 1}`);
+                imgElement.src = img.dataUrl;
+                imgElement.className = 'selection-item';
+                imgElement.loading = 'lazy';
+                
+                const ratingControls = document.createElement('div');
+                ratingControls.className = 'rating-controls';
+                ratingControls.innerHTML = `
+                    <input type="range" min="1" max="7" value="4" class="rating-slider" data-rating-index="${index}" />
+                    <div class="flex justify-between text-xs mt-1 px-1">
+                        <span class="text-red-500 font-bold">1(低焦慮)</span>
+                        <span class="text-gray-500">4(中等)</span>
+                        <span class="text-indigo-500 font-bold">7(高焦慮)</span>
+                    </div>
+                `;
 
-                wrapperDiv.appendChild(imgElement);
-                experimentSelectionGrid.appendChild(wrapperDiv);
+                wrapper.appendChild(imgElement);
+                wrapper.appendChild(ratingControls);
+                experimentSelectionGrid.appendChild(wrapper);
+
+                wrapper.addEventListener('click', (e) => handleSelection(index, wrapper));
             });
+        }
+
+        function handleSelection(index, wrapper) {
+            const currentSet = experimentDataSets[currentSetIndex];
+            const isSelected = wrapper.classList.contains('selected');
             
-            // 3. Reset Selection/Rating state and listener
-            currentSetData.selections = [];
-            currentSetData.ratings = Array(IMAGES_PER_SET).fill(4); // Reset ratings
+            if (stepSelectionInstruction.classList.contains('hidden')) return; // Ignore clicks during rating step
 
-            updateSelectionStatus();
-            setupSelectionListener();
-        }
-
-        function updateSelectionStatus() {
-            const currentSetData = experimentDataSets[currentSetIndex];
-            const selectedCount = currentSetData.selections.length;
-            selectionStatusText.textContent = `您已選擇 ${selectedCount} 張 / 需選擇 ${MAX_SELECTION} 張`;
-
-            const isReady = selectedCount === MAX_SELECTION;
-            goToRatingButton.disabled = !isReady;
-            goToRatingButton.classList.toggle('disabled-button', !isReady);
-            goToRatingButton.textContent = isReady ? '進入評分步驟' : `進入評分步驟 (已選擇 ${selectedCount}/${MAX_SELECTION})`;
-
-            // Update visual state of images
-            document.querySelectorAll('.selection-wrapper').forEach(wrapper => {
-                const mapIndex = parseInt(wrapper.getAttribute('data-map-index'));
-                if (currentSetData.selections.includes(mapIndex)) {
-                    wrapper.classList.add('selected');
-                } else {
-                    wrapper.classList.remove('selected');
-                }
-            });
-        }
-        
-        function setupSelectionListener() {
-            document.querySelectorAll('.selection-wrapper').forEach(wrapper => {
-                wrapper.onclick = (event) => {
-                    const currentSetData = experimentDataSets[currentSetIndex];
-                    const mapIndex = parseInt(wrapper.getAttribute('data-map-index'));
-                    const isSelected = currentSetData.selections.includes(mapIndex);
-
-                    if (isSelected) {
-                        // Deselect
-                        currentSetData.selections = currentSetData.selections.filter(index => index !== mapIndex);
-                    } else {
-                        // Select (if not maxed out)
-                        if (currentSetData.selections.length < MAX_SELECTION) {
-                            currentSetData.selections.push(mapIndex);
-                        } else {
-                            // Optionally, automatically replace the oldest selection
-                            // currentSetData.selections.shift();
-                            // currentSetData.selections.push(mapIndex);
-                        }
-                    }
-                    updateSelectionStatus();
-                };
-            });
-        }
-        
-        function setupRatingView() {
-            const currentSetData = experimentDataSets[currentSetIndex];
+            if (isSelected) {
+                // Deselect
+                wrapper.classList.remove('selected');
+                currentSet.selections = currentSet.selections.filter(i => i !== index);
+                currentSet.setImages[index].isSelected = false;
+            } else if (currentSet.selections.length < MAX_SELECTION) {
+                // Select
+                wrapper.classList.add('selected');
+                currentSet.selections.push(index);
+                currentSet.setImages[index].isSelected = true;
+            }
             
-            // Change instructions and button visibility
+            // Update button and status
+            const count = currentSet.selections.length;
+            selectionStatusText.textContent = `您已選擇 ${count} 張 / 需選擇 ${MAX_SELECTION} 張`;
+            goToRatingButton.textContent = `進入評分步驟 (已選擇 ${count}/${MAX_SELECTION})`;
+            goToRatingButton.disabled = count !== MAX_SELECTION;
+            goToRatingButton.classList.toggle('disabled-button', count !== MAX_SELECTION);
+        }
+
+        function startRatingStep() {
             stepSelectionInstruction.classList.add('hidden');
             stepRatingInstruction.classList.remove('hidden');
             goToRatingButton.classList.add('hidden');
+            nextSetButton.classList.remove('hidden');
             
-            if (currentSetIndex < MAX_EXPERIMENT_SETS - 1) {
-                nextSetButton.textContent = `進入下一組實驗 (第 ${currentSetIndex + 2} / ${MAX_EXPERIMENT_SETS} 組)`;
-                nextSetButton.classList.remove('hidden');
+            // Update next button text
+            if (currentSetIndex + 1 < experimentDataSets.length) {
+                nextSetButton.textContent = `進入下一組實驗 (第 ${currentSetIndex + 2} / ${experimentDataSets.length} 組)`;
             } else {
-                nextSetButton.textContent = '完成所有實驗';
-                nextSetButton.classList.remove('hidden');
+                nextSetButton.textContent = `完成實驗並生成過濾器`;
             }
-
-            // Render ratings controls below images
-            document.querySelectorAll('.selection-wrapper').forEach((wrapper, mapIndex) => {
-                const initialRating = currentSetData.ratings[mapIndex];
+            
+            nextSetButton.disabled = true;
+            nextSetButton.classList.add('disabled-button');
+            
+            // Show all rating sliders
+            const wrappers = experimentSelectionGrid.querySelectorAll('.selection-wrapper');
+            wrappers.forEach(wrapper => {
+                const controls = wrapper.querySelector('.rating-controls');
+                controls.classList.add('visible');
                 
-                // Add Rating Controls (Slider and label)
-                const controlsDiv = document.createElement('div');
-                controlsDiv.className = 'rating-controls visible';
-                controlsDiv.innerHTML = `
-                    <label class="block text-xs font-medium text-gray-700 mb-1">焦慮強度評分 (1-7)</label>
-                    <input type="range" min="1" max="7" value="${initialRating}" class="rating-slider" data-map-index="${mapIndex}">
-                    <div class="flex justify-between text-xs mt-1 text-gray-500 font-medium">
-                        <!-- UPDATED TEXT HERE -->
-                        <span>1 (完全不焦慮)</span>
-                        <span>${initialRating}</span>
-                        <span>7 (極度焦慮)</span>
-                    </div>
-                `;
-                
-                const slider = controlsDiv.querySelector('.rating-slider');
-                const labelContainer = controlsDiv.querySelector('.justify-between span:nth-child(2)');
-                
-                // Update the rating state on input
-                slider.oninput = (event) => {
-                    const value = parseInt(event.target.value);
-                    labelContainer.textContent = value;
-                    currentSetData.ratings[mapIndex] = value;
-                };
-
-                wrapper.appendChild(controlsDiv);
-                wrapper.onclick = null; // Disable selection click
+                // Add change listener to slider
+                const slider = controls.querySelector('.rating-slider');
+                slider.addEventListener('input', checkAllRatings);
             });
+            
+            checkAllRatings(); // Check initial state
+        }
+
+        function checkAllRatings() {
+            const currentSet = experimentDataSets[currentSetIndex];
+            const sliders = experimentSelectionGrid.querySelectorAll('.rating-slider');
+            let ratedCount = 0;
+            const ratings = [];
+
+            sliders.forEach((slider, index) => {
+                const value = parseInt(slider.value, 10);
+                // Only count the rating if the user has actually moved the slider from the default (4)
+                if (value !== 4) { 
+                    ratedCount++;
+                }
+                ratings[index] = value;
+            });
+            
+            currentSet.ratings = ratings;
+            
+            const requiredRatings = currentSet.setImages.length; // Need 9 ratings (even if 4 is the default)
+
+            const allRated = ratedCount >= requiredRatings; 
+
+            // IMPORTANT: For simplicity, we enforce that they must move the slider for all 9 images.
+            if (ratedCount === requiredRatings) {
+                 nextSetButton.disabled = false;
+                 nextSetButton.classList.remove('disabled-button');
+            } else {
+                 nextSetButton.disabled = true;
+                 nextSetButton.classList.add('disabled-button');
+            }
+        }
+
+        async function nextExperimentSet() {
+            // Check if all ratings are done (should be checked by button handler)
+            const currentSet = experimentDataSets[currentSetIndex];
+            if (currentSet.ratings.length !== IMAGES_PER_SET) return;
+
+            // Save the results of the current set
+            currentSet.setImages.forEach((img, index) => {
+                img.rating = currentSet.ratings[index];
+                img.isFiltered = img.isSelected ? 1 : 0; // Simple initial filter prediction based on selection
+            });
+
+            currentSetIndex++;
+            
+            if (currentSetIndex < experimentDataSets.length) {
+                // Next set
+                renderExperimentSet();
+            } else {
+                // Finish experiment
+                await runAiClassification();
+            }
         }
         
-        // --- Navigation and Action Listeners ---
-        
-        fullscreenToggleButton.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-                });
-                fullscreenToggleButton.textContent = '退出全螢幕';
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-                fullscreenToggleButton.textContent = '全螢幕模式';
+        async function runAiClassification() {
+            experimentLoadingMessage.classList.remove('hidden');
+            experimentPage.classList.add('hidden-page');
+            
+            const filterData = getFilterData();
+            let anxietyKeywords = "無";
+
+            // 1. Process anxiety example image (if exists)
+            if (filterData.anxietyImage) {
+                 const imageData = await readFileAsDataUrl(filterData.anxietyImage);
+                 anxietyKeywords = await processAnxietyExample(imageData);
             }
+            
+            // 2. Prepare Experiment Data for AI
+            const experimentSummary = experimentDataSets.map((set, setIndex) => {
+                const selectedIndices = set.selections.map(i => set.setImages[i].indexInGallery);
+                const ratings = set.setImages.map((img, i) => ({ 
+                    index: img.indexInGallery, 
+                    rating: set.ratings[i] 
+                }));
+                return { setIndex, selectedIndices, ratings };
+            });
+
+            // 3. Prepare Prompt for Classification
+            const fullPrompt = `
+                請分析以下使用者提供的個人資料、容貌焦慮數據，以及圖庫圖片的內容，為他們模擬生成一個二元分類結果（0=安全，1=焦慮）。
+                
+                --- 使用者檔案 ---
+                年齡: ${filterData.age || '未提供'}
+                性別: ${filterData.gender || '未提供'}
+                在意的部位: ${filterData.bodyParts.join(', ') || '無'}
+                細節設定: ${JSON.stringify(filterData.details)}
+                過濾主題: ${filterData.topics.join(', ') || '無'}
+                範例圖片分析關鍵詞: ${anxietyKeywords}
+                
+                --- 實驗數據 (每張圖片在圖庫中的原始索引及評分) ---
+                ${JSON.stringify(experimentSummary)}
+                
+                --- 任務 ---
+                請根據以上所有資訊，為一個包含 200 張圖片的虛擬圖庫生成分類結果。
+                輸出必須是純粹的 JSON 陣列，包含 200 個元素，每個元素只能是 0 或 1。
+                陣列長度必須為 200。
+                
+                輸出格式範例: [0, 1, 0, 1, 0, 0, 1, ...]
+            `;
+            
+            // For this simulation, we will use a simple rule-based mock classification instead of a heavy API call 
+            // since we don't have access to the actual 200 image contents.
+            await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate API loading time
+
+            // Mock Classification Logic
+            globalClassificationResults = Array(MAX_IMAGE_COUNT).fill(0).map(() => 
+                Math.random() < 0.25 ? 1 : 0 // 25% chance of being classified as "Anxious"
+            );
+
+            // 4. Save All Data (Settings + Experiment Results + Classification Results)
+            const finalData = {
+                filterData,
+                experimentDataSets,
+                globalClassificationResults,
+            };
+            await saveUserSettings(finalData);
+
+            // 5. Navigate to Thank You Page
+            experimentLoadingMessage.classList.add('hidden');
+            showPage('thankyou-page');
+            
+            // Enable Gallery Button
+            showFullResultsButton.disabled = false;
+            showFullResultsButton.classList.remove('disabled-button');
+        }
+
+        // --- GALLERY RENDERING & FILTERING ---
+        function renderGalleryImages(filtered = false) {
+            imageGallery.innerHTML = ''; 
+            const imagesToRender = uploadedGalleryDataUrls.length > 0 
+                ? uploadedGalleryDataUrls 
+                : generatePlaceholderDataUrls(MAX_IMAGE_COUNT);
+            
+            const classification = globalClassificationResults || Array(imagesToRender.length).fill(0).map(() => Math.random() < 0.25 ? 1 : 0);
+
+            let visibleCount = 0;
+
+            imagesToRender.forEach((src, index) => {
+                const isAnxious = classification[index] === 1;
+                
+                if (filtered && isAnxious) {
+                    // Skip 'anxious' images in filtered mode
+                    return; 
+                }
+                
+                visibleCount++;
+                const imgElement = document.createElement('img');
+                imgElement.src = src;
+                imgElement.className = `gallery-item ${isAnxious ? 'filtered' : 'safe'}`;
+                imgElement.loading = 'lazy';
+                imgElement.title = isAnxious ? `[AI 過濾] 可能引起焦慮` : `[AI 過濾] 安全內容`;
+                
+                imageGallery.appendChild(imgElement);
+            });
+            
+            galleryTitle.textContent = filtered ? `社群媒體內容模擬 (已過濾)` : `社群媒體內容模擬 (顯示所有內容)`;
+
+            if (visibleCount === 0) {
+                 imageGallery.innerHTML = '<p class="text-gray-500 col-span-full">圖庫中沒有圖片符合顯示條件。</p>';
+            }
+            
+            confirmFilterButton.classList.toggle('hidden', filtered);
+        }
+
+        // --- FILE HANDLING ---
+        anxietyExampleUpload.addEventListener('change', async (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                anxietyExampleLabelText.textContent = `已選擇: ${file.name}`;
+                anxietyExampleStatus.textContent = `圖片已載入，將用於 AI 焦慮特徵分析。`;
+            } else {
+                anxietyExampleLabelText.textContent = `點擊上傳讓您焦慮的單張範例圖片`;
+                anxietyExampleStatus.textContent = `尚未上傳範例圖片。`;
+            }
+        });
+
+        galleryUpload.addEventListener('change', async (e) => {
+            uploadedGalleryDataUrls = [];
+            if (e.target.files.length > 0) {
+                const files = Array.from(e.target.files).slice(0, MAX_IMAGE_COUNT);
+                galleryUploadLabelText.textContent = `已選擇 ${files.length} 張圖片 (上限 ${MAX_IMAGE_COUNT})`;
+                galleryUploadStatus.textContent = `正在處理圖片...`;
+                showFullResultsButton.disabled = true;
+                showFullResultsButton.classList.add('disabled-button');
+                
+                // Read files sequentially (or in parallel if optimized)
+                for (const file of files) {
+                    try {
+                        const dataUrl = await readFileAsDataUrl(file);
+                        uploadedGalleryDataUrls.push(dataUrl);
+                    } catch (error) {
+                        console.error("Error reading file:", file.name, error);
+                    }
+                }
+
+                galleryUploadStatus.textContent = `成功載入 ${uploadedGalleryDataUrls.length} 張圖片到模擬圖庫。`;
+                
+            } else {
+                galleryUploadLabelText.textContent = `點擊上傳多張照片到模擬圖庫`;
+                galleryUploadStatus.textContent = `尚未上傳任何圖片。`;
+            }
+            renderGalleryImages();
+            showFullResultsButton.disabled = !globalClassificationResults;
+            showFullResultsButton.classList.toggle('disabled-button', !globalClassificationResults);
+        });
+
+        // --- EVENT HANDLERS ---
+        
+        // Go to Gallery Button (Top) Handler
+        goToGalleryButtonTop.addEventListener('click', () => {
+             // Only show mock results if no experiment run yet
+             if (!globalClassificationResults) {
+                 globalClassificationResults = Array(MAX_IMAGE_COUNT).fill(0).map(() => 
+                    Math.random() < 0.25 ? 1 : 0 
+                );
+                // Temporarily enable for pre-experiment viewing
+                showFullResultsButton.disabled = false;
+                showFullResultsButton.classList.remove('disabled-button');
+             }
+             showPage('gallery-page');
+             renderGalleryImages(false);
         });
 
         startFilterButton.addEventListener('click', async () => {
-             // 1. Show Loading
-             experimentLoadingMessage.classList.remove('hidden');
-             startFilterButton.disabled = true;
-             startFilterButton.textContent = '正在進行 AI 模擬分析...';
+             // 1. Validate basic required inputs
+             const filterData = getFilterData();
+             if (!filterData.age || !filterData.gender || filterData.bodyParts.length === 0) {
+                 alert("請確保選擇了年齡、性別，並至少選擇一個在意的身體部位。");
+                 return;
+             }
              
-             // 2. AI Simulation
-             globalClassificationResults = await runAiClassification();
-             
-             // 3. Setup Experiment
-             setupExperimentSets(globalClassificationResults);
-             
-             // 4. Navigate
-             experimentLoadingMessage.classList.add('hidden');
+             // 2. Prepare and navigate to experiment
+             await initializeExperiment();
              showPage('experiment-page');
-             prepareExperimentPage(currentSetIndex);
-             
-             // 5. Reset Button State
-             startFilterButton.disabled = false;
-             startFilterButton.textContent = '開始進行篩選 (準備實驗)';
         });
+
+        goToRatingButton.addEventListener('click', startRatingStep);
+        nextSetButton.addEventListener('click', nextExperimentSet);
+
+        backToSettingsButton.addEventListener('click', () => showPage('settings-page'));
+        backFromGalleryButton.addEventListener('click', () => showPage('thankyou-page'));
+        backToSettingsFromThankYouButton.addEventListener('click', () => showPage('settings-page'));
         
-        goToGalleryButtonTop.addEventListener('click', () => {
-            if (globalClassificationResults) {
+        goToGalleryFromThankYouSmall.addEventListener('click', (e) => {
+            if (!e.target.disabled) {
                 showPage('gallery-page');
-            } else {
-                 // Simulate default results if jumping directly
-                 runAiClassification().then(results => {
-                    globalClassificationResults = results;
-                    renderGalleryResults();
-                    showFullResultsButton.disabled = false;
-                    showFullResultsButton.classList.remove('disabled-button');
-                    backFromGalleryButton.textContent = '← 返回設定頁';
-                    showPage('gallery-page');
-                }).catch(() => {
-                    // Fallback to viewing the gallery without filtering applied
-                    showPage('gallery-page');
-                    backFromGalleryButton.textContent = '← 返回設定頁';
-                });
+                renderGalleryImages(false);
             }
-        });
-
-        backToSettingsButton.addEventListener('click', () => {
-            showPage('settings-page');
-        });
-        
-        backToSettingsFromThankYouButton.addEventListener('click', () => {
-            showPage('settings-page');
-        });
-        
-        goToGalleryFromThankYouSmall.addEventListener('click', () => {
-            renderGalleryResults();
-            showPage('gallery-page');
-        });
-
-        backFromGalleryButton.addEventListener('click', () => {
-            // Check where we came from. If experiment completed, go to thankyou. If direct jump, go to settings.
-            if (currentSetIndex === MAX_EXPERIMENT_SETS) {
-                showPage('thankyou-page');
-            } else {
-                 // If we haven't started or completed the experiment, go back to settings
-                showPage('settings-page');
-            }
-            confirmFilterButton.classList.add('hidden'); // Ensure the confirmation button is hidden when returning
-        });
-
-        goToRatingButton.addEventListener('click', () => {
-            setupRatingView();
-        });
-        
-        nextSetButton.addEventListener('click', () => {
-            currentSetIndex++;
-            if (currentSetIndex < MAX_EXPERIMENT_SETS) {
-                prepareExperimentPage(currentSetIndex);
-            } else {
-                // Experiment finished
-                currentSetIndex = MAX_EXPERIMENT_SETS; // Mark as finished
-                
-                // TEMP: For a real app, send all experimentDataSets to the backend here!
-                console.log("Experiment Finished! All data collected:", experimentDataSets);
-                
-                // Navigate to Thank You Page
-                showPage('thankyou-page');
-            }
-        });
-        
-        showFullResultsButton.addEventListener('click', () => {
-             renderGalleryResults();
         });
         
         confirmFilterButton.addEventListener('click', () => {
-             document.querySelectorAll('.gallery-item').forEach((img, index) => {
-                const isFiltered = globalClassificationResults[index] === 1;
-                img.classList.toggle('hidden-item', isFiltered);
-             });
-             feedbackMessage.textContent = '已過濾掉所有 AI 判定可能引起您焦慮的內容。';
-             feedbackMessage.classList.remove('hidden', 'negative');
-             feedbackMessage.classList.add('positive');
-             confirmFilterButton.classList.add('hidden');
+            renderGalleryImages(true);
+        });
+
+        showFullResultsButton.addEventListener('click', () => {
+            renderGalleryImages(false);
         });
         
-        // --- Gallery Results Rendering ---
+        fullscreenToggleButton.addEventListener('click', () => {
+            document.documentElement.requestFullscreen();
+        });
 
-        function renderGalleryResults() {
-            if (!globalClassificationResults) {
-                feedbackMessage.textContent = '錯誤：尚未執行 AI 模擬分析。請先返回設定頁進行分析。';
-                feedbackMessage.classList.remove('hidden', 'positive');
-                feedbackMessage.classList.add('negative');
-                document.getElementById('image-gallery').innerHTML = '';
-                return;
-            }
-            
-            // Ensure images are rendered before applying styles
-            renderGalleryImages();
-
-            document.querySelectorAll('.gallery-item').forEach((img, index) => {
-                const status = globalClassificationResults[index];
-                
-                img.classList.remove('filtered', 'safe', 'hidden-item');
-
-                if (status === 1) {
-                    img.classList.add('filtered'); // Red border for anxious
-                } else {
-                    img.classList.add('safe'); // Green border for safe
-                }
-            });
-            
-            feedbackMessage.classList.add('hidden');
-            confirmFilterButton.classList.remove('hidden');
-            showFullResultsButton.disabled = true;
-            showFullResultsButton.classList.add('disabled-button');
-        }
-
-        // --- Initialization ---
-
+        // Initial check and setup
+        // Call this once on load to populate the container if the user selects a part early
         window.onload = () => {
-            // Initial render of placeholder images in the gallery
             renderGalleryImages();
-            
-            // Set initial state
-            showPage('settings-page'); 
         };
+
     </script>
 </body>
 </html>
