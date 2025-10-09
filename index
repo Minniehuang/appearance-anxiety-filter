@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>容貌焦慮篩選器設定</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #a7e2e3, #e2a7e3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            max-width: 450px; 
+            width: 95%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: max-width 0.3s;
+        }
+        @media (min-width: 768px) {
+            .container {
+                max-width: 1000px; /* Increased max-width for dual panel view */
+            }
+        }
+        .container.gallery-view {
+            max-width: 1000px;
+        }
+        .section-title {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -5px;
+            width: 50%;
+            height: 4px;
+            background-color: #6d28d9;
+            border-radius: 2px;
+        }
+        
+        /* Checkbox and Label styles */
+        .vertical-container {
+            display: flex;
+            flex-direction: column; 
+            gap: 0.75rem; 
+        }
+
+        .checkbox-label {
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-radius: 9999px;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem; 
+            display: block; 
+            width: 100%; 
+        }
+        .vertical-container .checkbox-label {
+            text-align: left; 
+            padding-left: 1.5rem; 
+        }
+
+        input[type="checkbox"]:checked + .checkbox-label,
+        .anxiety-checkbox-label.selected {
+            background-color: #6d28d9;
+            border-color: #6d28d9;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(109, 40, 217, 0.2);
+        }
+        
+        /* Custom input style for current status */
+        .status-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 0.75rem; 
+            transition: all 0.2s;
+            background-color: #fff;
+            font-weight: 500;
+        }
+        .status-input:focus {
+            outline: none;
+            border-color: #6d28d9;
+            box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.2);
+        }
+        /* Style for the grey placeholder text */
+        .status-input::placeholder {
+            color: #9ca3af; /* Tailwind gray-400 for a soft grey */
+            font-weight: 400;
+        }
+        
+        .input-label {
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+        
+        /* Face Customization Grid */
+        .face-custom-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .face-part-card {
+            background-color: #f3e8ff; /* purple-100 */
+            border: 2px solid #d8b4fe; /* purple-300 */
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .face-part-card.active {
+            background-color: #c084fc; /* purple-400 */
+            color: white;
+            border-color: #9333ea; /* purple-700 */
+        }
+        .anxiety-type-group .checkbox-label {
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+        .anxiety-type-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .hidden-page {
+            display: none;
+        }
+        .disabled-button {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: scale(1); /* prevent hover scale on disabled */
+        }
+
+        /* --- EXPERIMENT IMAGE STYLES --- */
+        
+        .selection-wrapper {
+            position: relative;
+            border-radius: 0.75rem; 
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            aspect-ratio: 1 / 1; 
+            border: 3px solid transparent; 
+            padding: 0; 
+        }
+
+        .selection-item {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            display: block;
+            transition: transform 0.2s;
+        }
+
+        .selection-wrapper.selected {
+            border-color: #dc2626; /* Tailwind red-600 */
+            transform: scale(0.98);
+            box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.5); 
+        }
+
+        .selection-wrapper:not(.selected):hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Hide rating controls initially in step 1, show them in step 2 */
+        .rating-controls, .slider-label {
+            position: absolute;
+            left: 0;
+            right: 0;
+            color: white;
+            padding: 0.5rem;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        
+        /* 讓 slider-label 顯示即時分數 */
+        .slider-label {
+             font-size: 0.875rem; /* Slightly larger text */
+             padding: 0.5rem 0.5rem;
+             top: 0; /* Positioned at the top */
+             bottom: auto;
+             background: rgba(109, 40, 217, 0.95); /* Purple background for score */
+             border-top-left-radius: 0.75rem;
+             border-top-right-radius: 0.75rem;
+             font-weight: 700;
+             z-index: 10;
+        }
+        
+        .rating-controls {
+            bottom: 0; /* Positioned at the bottom */
+            top: auto;
+            background: rgba(0, 0, 0, 0.85);
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            padding: 1rem 0.5rem 0.5rem 0.5rem;
+            z-index: 10;
+        }
+        
+        .rating-controls.visible, .slider-label.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .rating-slider {
+            width: 100%;
+        }
+        /* --- END EXPERIMENT IMAGE STYLES --- */
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.5rem;
+        }
+        .gallery-item {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            border: 3px solid transparent;
+            transition: border-color 0.3s;
+        }
+        .gallery-item.filtered {
+            border-color: #dc2626; /* Red for anxiety targets */
+        }
+        .gallery-item.safe {
+            border-color: #10b981; /* Green for safe content */
+        }
+        .gallery-upload-style {
+            border: 2px dashed #a78bfa;
+            border-radius: 1rem;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+        .gallery-upload-style:hover {
+            background-color: #f5f3ff;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-cyan-300 via-pink-300 to-purple-400 min-h-screen flex flex-col justify-center items-center p-4">
+
+    <div id="main-container" class="container text-center relative">
+        <button id="fullscreen-toggle-button" class="absolute top-4 right-4 bg-purple-100 hover:bg-purple-200 text-purple-600 font-bold py-1 px-3 rounded-full transition-all text-xs z-10">
+            全螢幕模式
+        </button>
+        
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Appearance Anxiety Filter </h1>
+        <p class="text-sm text-gray-500 mb-6">透過設定個人化過濾器，保護您的心理健康</p>
+        
+        <!-- Setting Page (Page 1) -->
+        <div id="settings-page">
+            
+            <button id="go-to-gallery-button-top" class="bg-purple-100 hover:bg-purple-200 text-purple-600 font-bold py-2 px-8 rounded-full transition-all w-full mb-4 text-sm">
+                前往圖庫 (無需輸入資料可跳轉)
+            </button>
+            
+            <!-- Personal Info Section -->
+            <div class="mb-4">
+                <div class="section-title">您的基本資料</div>
+                <div class="flex flex-col sm:flex-row gap-4 mt-4">
+                    <select id="age-input" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">
+                        <option value="" disabled selected>您的年齡</option>
+                        <option value="10-19">10-19歲</option>
+                        <option value="20-29">20-29歲</option>
+                        <option value="30-39">30-39歲</option>
+                        <option value="40-49">40-49歲</option>
+                        <option value="50-59">50-59歲</option>
+                        <option value="60+">60歲以上</option>
+                    </select>
+                    <select id="gender-select" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all">
+                        <option value="" disabled selected>您的性別</option>
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Body Parts and Current Status Wrapper (Responsive Grid) -->
+            <div class="md:grid md:grid-cols-2 md:gap-6 mb-6">
+                
+                <!-- Left: Ideal Body Parts Section -->
+                <div>
+                    <div class="section-title">您想達成的理想部位</div>
+                    <div id="body-parts-container" class="vertical-container">
+                        <label data-part="face" class="w-full">
+                            <input type="checkbox" class="hidden" value="face" />
+                            <span class="checkbox-label">臉</span>
+                        </label>
+                        <label data-part="legs" class="w-full">
+                            <input type="checkbox" class="hidden" value="legs" />
+                            <span class="checkbox-label">腿</span>
+                        </label>
+                        <label data-part="chest" class="w-full">
+                            <input type="checkbox" class="hidden" value="chest" />
+                            <span class="checkbox-label">胸部</span>
+                        </label>
+                        <label data-part="waist" class="w-full">
+                            <input type="checkbox" class="hidden" value="waist" />
+                            <span class="checkbox-label">腰</span>
+                        </label>
+                        <label data-part="buttocks" class="w-full">
+                            <input type="checkbox" class="hidden" value="buttocks" />
+                            <span class="checkbox-label">臀部</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Right: Dynamic Current Status Input Section -->
+                <div id="current-status-wrapper" class="mt-6 md:mt-0"> 
+                    <!-- Title will be dynamically inserted here -->
+                    <div id="current-status-title">
+                        <div class="section-title text-gray-400">請選擇左側部位</div>
+                    </div>
+                    
+                    <!-- Inputs will be dynamically inserted here -->
+                    <div id="status-input-container" class="vertical-container bg-white p-4 rounded-xl shadow-inner text-gray-500">
+                        <p class="text-sm">點擊左側的部位，此處將顯示對應的**「目前狀態」**測量欄位和焦慮類型選擇。</p>
+                        <p class="text-xs mt-2">例如：選擇「臉」會顯示角色自訂選項；選擇「腰」會顯示腰圍和焦慮類型。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ideal Example Upload and Topic Filter side-by-side -->
+            <div class="md:grid md:grid-cols-2 md:gap-6 mb-6">
+                
+                <!-- Left Column: Ideal Example Upload Section with Dashed Border (MODIFIED TITLE AND TEXT) -->
+                <div> <!-- Removed border and padding from here -->
+                    <div class="section-title">上傳讓您感到焦慮的照片</div>
+                    <!-- Apply border, centering, and padding to the label (the upload box) -->
+                    <label 
+                        for="anxiety-example-upload" 
+                        class="file-box mt-4 border-2 border-dashed border-purple-400 rounded-xl p-8 cursor-pointer transition-colors hover:bg-purple-50 flex flex-col items-center justify-center"
+                    >
+                        <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-purple-600 mb-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                        </svg>
+                        <span id="anxiety-example-label-text" class="text-sm font-medium text-gray-600">點擊上傳讓您感到焦慮的單張照片</span>
+                        <input type="file" id="anxiety-example-upload" accept="image/*" class="hidden"/>
+                    </label>
+                    <p id="anxiety-example-status" class="text-xs text-left mt-2 text-gray-500">
+                        尚未上傳焦慮照片。 (此圖將作為過濾器的負向參考)
+                    </p>
+                </div>
+
+                <!-- Right Column: New Topic Filter Section -->
+                <div>
+                    <div class="section-title">過濾主題</div>
+                    <div class="mt-4">
+                        <input type="text" id="topic-input" placeholder="輸入您想要過濾的主題關鍵字 (如: 瘦身, 健美, 網紅)" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- VALIDATION FEEDBACK -->
+            <div id="settings-feedback" class="hidden feedback warning mb-4"></div>
+
+            <!-- BOTTOM MAIN ACTION BUTTON -->
+            <button id="start-filter-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mb-4">
+                開始進行篩選 (進入實驗頁)
+            </button>
+            
+        </div>
+        
+        <!-- Experiment Page (Page 2) -->
+        <div id="experiment-page" class="hidden-page">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">實驗開始
+            </h2>
+
+            <button id="back-to-settings-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition-all text-sm mb-4 w-full">
+                ← 返回設定頁
+            </button>
+            
+            <div id="experiment-loading-message" class="hidden mb-4">
+                <div id="loading-message">正在準備實驗內容...</div>
+            </div>
+
+            <!-- STEP 1: Image Selection Instruction -->
+            <div id="step-selection-instruction" class="mb-6 p-4 border border-purple-300 rounded-lg bg-purple-50">
+                <div class="section-title text-purple-700">步驟一：選出最焦慮的 3 張圖片</div>
+                <p class="text-sm text-gray-700 mt-2 text-left">
+                    請在以下圖片中，**點擊** 選出讓您感到**容貌焦慮最強烈**的 **3 張** 圖片。
+                    <span class="font-bold block mt-1 text-red-600" id="selection-status-text">您已選擇 0 張 / 需選擇 3 張</span>
+                </p>
+            </div>
+
+            <!-- STEP 2: Rating Instruction (Initially Hidden) -->
+            <div id="step-rating-instruction" class="hidden mb-6 p-4 border border-purple-300 rounded-lg bg-purple-50">
+                <div class="section-title text-purple-700">步驟二：評估所有圖片的焦慮強度 (1-7分)</div>
+                <p class="text-sm text-gray-700 mt-2 text-left">
+                    請對以下 **9 張圖片** 逐一評估其引發您**容貌焦慮的強度**。
+                    <span class="font-bold block mt-1 text-red-600">評分標準：1 (完全不焦慮) 至 7 (非常焦慮)</span>
+                </p>
+            </div>
+            
+            <!-- 9-Image Grid for Selection / Rating (grid-cols-3) -->
+            <div id="experiment-selection-grid" class="mb-6 grid grid-cols-3 gap-3">
+                <!-- 9 image wrappers will be inserted here -->
+            </div>
+
+            <!-- Buttons -->
+            <button id="go-to-rating-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mt-6 disabled-button" disabled>
+                進入評分步驟 (已選擇 0/3)
+            </button>
+            
+            <button id="next-set-button" class="hidden bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mt-6">
+                完成實驗，前往 AI 過濾結果圖庫
+            </button>
+            
+        </div>
+        
+        <!-- Gallery Results Page (Page 3) -->
+        <div id="gallery-page" class="hidden-page">
+            
+            <button id="back-from-gallery-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-full transition-all text-sm mb-4 w-full">
+                ← 返回設定頁
+            </button>
+
+            <!-- Gallery Image Upload Section -->
+            <div class="mb-6">
+                <div class="section-title">上傳您的模擬圖庫照片 (建議 200 張)</div>
+                <label for="gallery-upload" class="file-box gallery-upload-style">
+                    <svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12l-4.5 4.5m0 0l-4.5-4.5m4.5 4.5V3" />
+                    </svg>
+                    <span id="gallery-upload-label-text">點擊上傳多張照片到模擬圖庫</span>
+                    <input type="file" id="gallery-upload" accept="image/*" class="hidden" multiple/>
+                </label>
+                <p id="gallery-upload-status" class="text-xs text-left mt-2 text-gray-500">
+                    尚未上傳任何圖片。
+                </p>
+            </div>
+            
+            <button id="show-full-results-button" class="bg-purple-600 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mb-4 disabled-button" disabled>
+                顯示完整 AI 過濾結果
+            </button>
+
+
+            <!-- Image Gallery -->
+            <div id="gallery-container" class="mb-6">
+                <div class="section-title" id="gallery-title">社群媒體內容模擬 (預設佔位圖)</div>
+                <p class="text-xs text-gray-500 mt-2 text-left">紅色邊框為 AI 預測可能引起您焦慮的圖片；綠色邊框為安全內容。</p>
+                <div id="image-gallery" class="gallery mt-4">
+                    <!-- Placeholder images or uploaded images will be inserted here -->
+                </div>
+            </div>
+            
+            <div id="feedback-message" class="hidden feedback"></div>
+            
+            <!-- Confirm Filter Button -->
+            <button id="confirm-filter-button" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg transform hover:scale-105 w-full mt-4">
+                確定過濾，只顯示安全照片
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: Firebase setup variables (MUST BE USED AS IS)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let app = null;
+        let db = null;
+        let auth = null;
+        let userId = 'loading'; 
+        let isAuthReady = false;
+
+        // --- GLOBAL STATE ---
+        const state = {
+            selectedParts: [],
+            // 儲存每個部位的目前狀態數據和焦慮類型
+            currentStatus: { 
+                face: {
+                    activeSubPart: 'eyes', // 臉部目前選中的子選項
+                    anxieties: { 
+                        eyes: ['大小'], 
+                        nose: [], 
+                        mouth: [], 
+                        eyebrows: [], 
+                        wrinkles: [], 
+                        ornamentation: [] 
+                    }
+                },
+                // 尺寸預設為 null，讓輸入框顯示灰色提示字
+                legs: {
+                    dimensions: { thighCircumference: null, calfCircumference: null, legLength: null },
+                    anxieties: ['proportion'], // 焦慮類型
+                },
+                chest: {
+                    dimensions: { chestCircumference: null, cupSize: null }, // CupSize 也為 null
+                    anxieties: [],
+                },
+                waist: {
+                    dimensions: { waistCircumference: null, bellyFat: null },
+                    anxieties: [],
+                },
+                buttocks: {
+                    dimensions: { hipCircumference: null, hipHeight: null },
+                    anxieties: [],
+                },
+            },
+            userInfo: {
+                age: '',
+                gender: '',
+                topic: '',
+            },
+            activePartForInput: null, 
+            anxietyExample: null, 
+            galleryImages: [], 
+            experimentData: [], 
+            imagesPerSet: 9, 
+            galleryFiltered: false,
+        };
+        
+        // --- DYNAMIC CONTENT MAP (輸入類型已設定為 text 以支援多位數和小數點) ---
+        const DYNAMIC_INPUT_MAP = {
+            face: {
+                title: '目前臉部焦點與焦慮類型',
+                type: 'qualitative',
+                // 臉部子選項 (對應圖片)
+                selections: [
+                    { key: 'eyes', label: '眼睛', icon: '👁️', anxietyList: ['單眼皮', '雙眼皮', '臥蠶'] },
+                    { key: 'nose', label: '鼻子', icon: '👃', anxietyList: ['扁塌鼻樑', '鼻頭過大或朝天鼻', '鼻翼寬大'] },
+                    { key: 'mouth', label: '嘴巴', icon: '👄', anxietyList: ['嘴脣太薄', '嘴脣太厚弧度', '牙齒不整齊'] },
+                    { key: 'eyebrows', label: '眉毛', icon: '〰️', anxietyList: ['眉型', '稀疏度'] },
+                    { key: 'wrinkles', label: '皺紋', icon: '⏳', anxietyList: ['法令紋', '魚尾紋', '抬頭紋'] },
+                    { key: 'ornamentation', label: '膚質', icon: '👓', anxietyList: ['痘痘'] },
+                ]
+            },
+            legs: {
+                title: '目前腿部狀態 (尺寸與焦慮)',
+                type: 'mixed',
+                inputs: [
+                    // 關鍵: inputType: 'text' 確保可以輸入多位數和小數點
+                    { id: 'thighCircumference', label: '大腿圍 (cm)', default: null, step: 0.1, min: 20, inputType: 'text', placeholder: '請在這裡輸入您目前的大腿圍 (例如: 55.5)' },
+                    { id: 'calfCircumference', label: '小腿圍 (cm)', default: null, step: 0.1, min: 15, inputType: 'text', placeholder: '請在這裡輸入您目前的小腿圍 (例如: 32)' },
+                    { id: 'legLength', label: '腿長 (cm)', default: null, step: 0.1, min: 50, inputType: 'text', placeholder: '請在這裡輸入您目前的腿長 (例如: 100)' },
+                ],
+                anxietyTypes: [
+                    '太粗', 
+                    '太細', 
+                    '腿長比例不佳', 
+                    'O/X型腿或不直', 
+                    '皮膚瑕疵 (如橘皮)'
+                ]
+            },
+            chest: {
+                title: '目前胸部尺寸與焦慮類型',
+                type: 'mixed',
+                inputs: [
+                    { id: 'chestCircumference', label: '胸圍 (cm)', default: null, step: 0.1, min: 50, inputType: 'text', placeholder: '請在這裡輸入您目前的胸圍 (例如: 85)' },
+                    { 
+                        id: 'cupSize', 
+                        label: '罩杯尺寸', 
+                        inputType: 'text', // 使用 text 允許自由輸入字母和數字
+                        placeholder: '請在這裡輸入您的罩杯尺寸 (如: C/75B)', 
+                        default: null 
+                    }, 
+                ],
+                anxietyTypes: [
+                    '尺寸過大', '尺寸過小', 
+                    '下垂', 
+                    '副乳', 
+                ]
+            },
+            waist: {
+                title: '目前腰部狀態 (尺寸與焦慮)',
+                type: 'mixed',
+                inputs: [
+                    // 關鍵: inputType: 'text' 確保可以輸入多位數和小數點
+                    { id: 'waistCircumference', label: '腰圍 (cm)', default: null, step: 0.1, min: 40, inputType: 'text', placeholder: '請在這裡輸入您目前的腰圍 (例如: 63.2)' }, 
+                    { id: 'bellyFat', label: '體脂肪率 (%)', default: null, step: 0.1, min: 5, max: 50, inputType: 'text', placeholder: '請在這裡輸入您的體脂肪率 (例如: 22.8)' }, 
+                ],
+                anxietyTypes: [
+                    '腹部脂肪過多', 
+                    '腰線不明顯', 
+                    '沒有馬甲線/腹肌'
+                ]
+            },
+            buttocks: {
+                title: '目前臀部狀態 (尺寸與焦慮)',
+                type: 'mixed',
+                inputs: [
+                    { id: 'hipCircumference', label: '臀圍 (cm)', default: null, step: 0.1, min: 60, inputType: 'text', placeholder: '請在這裡輸入您目前的臀圍 (例如: 90)' },
+                    { id: 'hipHeight', label: '臀高 (cm)', default: null, step: 0.1, min: 80, inputType: 'text', placeholder: '請在這裡輸入您目前的臀高 (例如: 105.8)' },
+                ],
+                anxietyTypes: [
+                    '形狀扁平', 
+                    '尺寸過大', 
+                    '微笑線不明顯', 
+                    '脂肪堆積'
+                ]
+            }
+        };
+
+        // --- DOM Elements & MOCK DATA ---
+        const settingsPage = document.getElementById('settings-page');
+        const experimentPage = document.getElementById('experiment-page');
+        const galleryPage = document.getElementById('gallery-page');
+        
+        const bodyPartsContainer = document.getElementById('body-parts-container');
+        const currentStatusTitle = document.getElementById('current-status-title');
+        const currentStatusContainer = document.getElementById('status-input-container'); 
+        const settingsFeedback = document.getElementById('settings-feedback');
+        const startFilterButton = document.getElementById('start-filter-button');
+        const goRatingButton = document.getElementById('go-to-rating-button');
+        const nextSetButton = document.getElementById('next-set-button');
+        const experimentGrid = document.getElementById('experiment-selection-grid');
+        const selectionStatusText = document.getElementById('selection-status-text');
+        const galleryContainer = document.getElementById('image-gallery');
+        const mainContainer = document.getElementById('main-container');
+
+        const PLACEHOLDER_IMAGES = [
+            'https://placehold.co/100x100/a7a7a7/ffffff?text=P1', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P2', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P3',
+            'https://placehold.co/100x100/a7a7a7/ffffff?text=P4', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P5', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P6',
+            'https://placehold.co/100x100/a7a7a7/ffffff?text=P7', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P8', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P9',
+            'https://placehold.co/100x100/a7a7a7/ffffff?text=P10', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P11', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P12',
+            'https://placehold.co/100x100/a7a7a7/ffffff?text=P13', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P14', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P15',
+            'https://placehold.co/100x100/a7a7a7/ffffff?text=P16', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P17', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P18',
+            'https://placehold.co/100x100/a7a7a7/ffffff?text=P19', 'https://placehold.co/100x100/a7a7a7/ffffff?text=P20',
+        ];
+
+        const MOCK_IMAGE_FEATURES = [
+            { id: 'P1', isExtremeThinness: true, isWarpedBackground: false, hasJawlineFocus: true, isLegFocus: false },
+            { id: 'P2', isExtremeThinness: false, isWarpedBackground: true, hasJawlineFocus: false, isLegFocus: true },
+            { id: 'P3', isExtremeThinness: true, isWarpedBackground: false, hasJawlineFocus: false, isLegFocus: false },
+            { id: 'P4', isExtremeThinness: false, isWarpedBackground: false, hasJawlineFocus: true, isLegFocus: false },
+            { id: 'P5', isExtremeThinness: true, isWarpedBackground: true, hasJawlineFocus: false, isLegFocus: true },
+            { id: 'P6', isExtremeThinness: false, isWarpedBackground: false, hasJawlineFocus: false, isLegFocus: false },
+            { id: 'P7', isExtremeThinness: true, isWarpedBackground: false, hasJawlineFocus: true, isLegFocus: false },
+            { id: 'P8', isExtremeThinness: false, isWarpedBackground: true, hasJawlineFocus: false, isLegFocus: true },
+            { id: 'P9', isExtremeThinness: true, isWarpedBackground: false, hasJawlineFocus: true, isLegFocus: false },
+            { id: 'P10', isExtremeThinness: false, isWarpedBackground: false, hasJawlineFocus: false, isLegFocus: true },
+            { id: 'P11', isExtremeThinness: true, isWarpedBackground: true, hasJawlineFocus: true, isLegFocus: false },
+            { id: 'P12', isExtremeThinness: false, isWarpedBackground: false, hasJawlineFocus: false, isLegFocus: true },
+            { id: 'P13', isExtremeThinness: false, isWarpedBackground: false, hasJawlineFocus: false, isLegFocus: false },
+            { id: 'P14', isExtremeThinness: true, isWarpedBackground: false, hasJawlineFocus: false, isLegFocus: true },
+            { id: 'P15', isExtremeThinness: false, isWarpedBackground: true, hasJawlineFocus: true, isLegFocus: false },
+            { id: 'P16', isExtremeThinness: true, isWarpedBackground: false, hasJawlineFocus: false, isLegFocus: true },
+            { id: 'P17', isExtremeThinness: false, isWarpedBackground: true, hasJawlineFocus: false, isLegFocus: false },
+            { id: 'P18', isExtremeThinness: true, isWarpedBackground: false, hasJawlineFocus: true, isLegFocus: true },
+            { id: 'P19', isExtremeThinness: false, isWarpedBackground: false, hasJawlineFocus: false, isLegFocus: false },
+            { id: 'P20', isExtremeThinness: true, isWarpedBackground: true, hasJawlineFocus: false, isLegFocus: true },
+        ];
+
+
+        // --- FIREBASE INITIALIZATION & AUTH ---
+        if (firebaseConfig) {
+            try {
+                setLogLevel('Debug');
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                    } else {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                            userId = auth.currentUser.uid;
+                        } else {
+                            const anonUser = await signInAnonymously(auth);
+                            userId = anonUser.user.uid;
+                        }
+                    }
+                    isAuthReady = true;
+                    setupFirestoreListener(); 
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+            }
+        } else {
+            console.error("Firebase config is missing.");
+        }
+        
+        // --- DATA SYNC (Firestore) ---
+        const getArtifactRef = () => doc(db, 'artifacts', appId, 'users', userId, 'state', 'data');
+
+        const saveStateToFirestore = async () => {
+            if (!isAuthReady || !db) return;
+            const dataToSave = {
+                state: state,
+                lastUpdated: new Date().toISOString(),
+            };
+            try {
+                await setDoc(getArtifactRef(), dataToSave, { merge: true });
+            } catch (error) {
+                console.error("Error saving state to Firestore:", error);
+            }
+        };
+        
+        // --- CRITICAL FIX: DEBOUNCE UTILITY ---
+        let debounceTimer;
+        const DEBOUNCE_DELAY = 300; // 300ms 延遲
+
+        // 建立一個防抖動的儲存函數，避免輸入時持續觸發重新渲染
+        const debouncedSaveState = (callback) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                callback();
+            }, DEBOUNCE_DELAY);
+        };
+        // --- END DEBOUNCE UTILITY ---
+
+
+        const setupFirestoreListener = () => {
+            if (!isAuthReady || !db) return;
+            const docRef = getArtifactRef();
+            
+            onSnapshot(docRef, (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data().state;
+                    if (data) {
+                        // Merge loaded data with default state
+                        Object.assign(state, data);
+                        renderSettingsFromState(); 
+                        console.log("State loaded from Firestore:", state);
+                    }
+                }
+            }, (error) => {
+                console.error("Error listening to state changes:", error);
+            });
+        };
+
+        // --- DYNAMIC INPUT HANDLERS (支援多位數輸入的關鍵邏輯) ---
+        
+        /**
+         * 根據評分 (1-7) 返回描述性文字。
+         * @param {number} rating 
+         * @returns {string} 
+         */
+        const getRatingText = (rating) => {
+            let description = '';
+            // 變更為 7 點量表描述
+            switch(rating) {
+                case 1: description = '完全不焦慮'; break;
+                case 2: description = '略微焦慮'; break; 
+                case 3: description = '有點焦慮'; break;
+                case 4: description = '中度焦慮'; break;
+                case 5: description = '明顯焦慮'; break; 
+                case 6: description = '強烈焦慮'; break; 
+                case 7: description = '非常焦慮'; break;
+                default: description = '未評分';
+            }
+            return `${rating} 分 (${description})`;
+        };
+        
+        // Handler for all dimension inputs (all are type="text" to allow multi-digit/decimal input)
+        window.handleDynamicInput = (element) => {
+            const part = element.getAttribute('data-part');
+            const key = element.getAttribute('data-key');
+            let value = element.value.trim(); 
+            
+            // 檢查是否為需要數值解析的欄位 (所有 dimension inputs, 除了 cupSize)
+            const shouldBeNumber = (key !== 'cupSize');
+
+            if (value === '') {
+                // 當輸入框清空時，儲存 null，確保不會出現 0
+                value = null; 
+            } else if (shouldBeNumber) {
+                const numericValue = parseFloat(value);
+                // 如果能解析為數字（包含多位數和小數點），則儲存數字
+                if (!isNaN(numericValue)) {
+                    value = numericValue;
+                }
+                // 如果是無效的數字字串（例如 "abc"），則 value 仍保留字串，用戶需修正。
+            } 
+            
+            if (state.currentStatus[part] && state.currentStatus[part].dimensions && key) {
+                state.currentStatus[part].dimensions[key] = value;
+                // 使用防抖動儲存，避免輸入時持續觸發重新渲染
+                debouncedSaveState(saveStateToFirestore);
+            }
+        };
+
+        // Handler for non-Face anxiety type selections 
+        window.handleAnxietyTypeSelection = (element, part, anxietyType) => {
+            const isSelected = element.classList.toggle('selected');
+            let anxieties = state.currentStatus[part].anxieties || [];
+            
+            if (isSelected) {
+                if (!anxieties.includes(anxietyType)) {
+                    anxieties.push(anxietyType);
+                }
+            } else {
+                anxieties = anxieties.filter(a => a !== anxietyType);
+            }
+            state.currentStatus[part].anxieties = anxieties;
+            saveStateToFirestore();
+        };
+
+        // Handler for Face anxiety type selections
+        window.handleFaceAnxietySelection = (element, partKey, anxietyType) => {
+            const isSelected = element.classList.toggle('selected');
+            const subPart = state.currentStatus.face.activeSubPart;
+            
+            let anxieties = state.currentStatus.face.anxieties[subPart] || [];
+            
+            if (isSelected) {
+                if (!anxieties.includes(anxietyType)) {
+                    anxieties.push(anxietyType);
+                }
+            } else {
+                anxieties = anxieties.filter(a => a !== anxietyType);
+            }
+            state.currentStatus.face.anxieties[subPart] = anxieties;
+            
+            // Re-render the active face part card to update count/style
+            renderFaceSubPartCards();
+            saveStateToFirestore();
+        };
+
+        // Handler for switching active face sub-part (Eyes, Nose, etc.)
+        window.handleFaceSubPartSwitch = (subPartKey) => {
+            state.currentStatus.face.activeSubPart = subPartKey;
+            
+            // Re-render only the anxiety type list
+            const partData = DYNAMIC_INPUT_MAP.face.selections.find(s => s.key === subPartKey); 
+            const selectedAnxieties = state.currentStatus.face.anxieties[subPartKey] || [];
+
+            const anxietyListContainer = document.getElementById('face-anxiety-list');
+            const anxietyTitle = document.getElementById('face-anxiety-title');
+            
+            if (partData && anxietyListContainer && anxietyTitle) {
+                anxietyTitle.textContent = `步驟二：選擇「${partData.label}」的焦慮類型`;
+                anxietyListContainer.innerHTML = generateAnxietyTypeListHTML('face', partData.anxietyList, selectedAnxieties);
+            }
+            
+            // Re-render the side cards to show which one is active
+            renderFaceSubPartCards();
+            saveStateToFirestore();
+        };
+        
+        // --- RENDERING FUNCTIONS ---
+
+        const generateAnxietyTypeListHTML = (part, anxietyTypes, selectedAnxieties) => {
+            // FIX: Ensure anxietyTypes is an array before calling map
+            if (!Array.isArray(anxietyTypes)) {
+                console.error("Anxiety types list is not an array:", anxietyTypes);
+                return '<p class="text-red-500 text-xs">載入焦慮類型清單失敗。</p>';
+            }
+            
+            return anxietyTypes.map(anxietyType => {
+                const isSelected = selectedAnxieties.includes(anxietyType);
+                const clickHandler = (part === 'face') 
+                    ? `window.handleFaceAnxietySelection(this, '${part}', '${anxietyType}')`
+                    : `window.handleAnxietyTypeSelection(this, '${part}', '${anxietyType}')`;
+                    
+                return `
+                    <label onclick="${clickHandler}" class="anxiety-checkbox-label checkbox-label ${isSelected ? 'selected' : ''}">
+                        ${anxietyType}
+                    </label>
+                `;
+            }).join('');
+        };
+        
+        const renderFaceSubPartCards = () => {
+            const container = document.getElementById('face-sub-part-cards');
+            if (!container) return;
+            
+            container.innerHTML = DYNAMIC_INPUT_MAP.face.selections.map(selection => {
+                const count = state.currentStatus.face.anxieties[selection.key]?.length || 0;
+                const isActive = state.currentStatus.face.activeSubPart === selection.key;
+                
+                return `
+                    <div 
+                        onclick="window.handleFaceSubPartSwitch('${selection.key}')"
+                        class="face-part-card ${isActive ? 'active' : ''} transition duration-200 hover:shadow-lg"
+                    >
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-sm md:text-md">${selection.icon} ${selection.label}</h4>
+                            <span class="text-xs font-semibold ${isActive ? 'bg-white text-purple-600' : 'bg-purple-300 text-purple-800'} px-2 py-0.5 rounded-full">${count} 種焦慮</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const renderCurrentStatusInputs = () => {
+            const activePart = state.activePartForInput;
+            
+            if (!activePart || !DYNAMIC_INPUT_MAP[activePart]) {
+                currentStatusTitle.innerHTML = `<div class="section-title text-gray-400">請選擇左側部位</div>`;
+                currentStatusContainer.innerHTML = `<p class="text-sm">點擊左側的部位，此處將顯示對應的**「目前狀態」**測量欄位和焦慮類型選擇。</p>
+                <p class="text-xs mt-2">例如：選擇「臉」會顯示角色自訂選項；選擇「腰」會顯示腰圍和焦慮類型。</p>`;
+                currentStatusContainer.classList.add('bg-white', 'p-4', 'rounded-xl', 'shadow-inner', 'text-gray-500');
+                return;
+            }
+
+            const partData = DYNAMIC_INPUT_MAP[activePart];
+            
+            // 1. Update Title
+            currentStatusTitle.innerHTML = `<div class="section-title">${partData.title}</div>`;
+            
+            // 2. Clear initial styles
+            currentStatusContainer.classList.remove('bg-white', 'p-4', 'rounded-xl', 'shadow-inner', 'text-gray-500');
+            currentStatusContainer.innerHTML = ''; // Clear content
+
+            if (partData.type === 'qualitative') {
+                // --- RENDER FACE (QUALITATIVE) ---
+                const activeSubPartKey = state.currentStatus.face.activeSubPart;
+                const activeSubPartData = partData.selections.find(s => s.key === activeSubPartKey);
+                const selectedAnxieties = state.currentStatus.face.anxieties[activeSubPartKey] || [];
+
+                // Fallback check in case activeSubPartData is somehow missing
+                if (!activeSubPartData) {
+                    console.error("Critical: Active face sub-part data not found for key:", activeSubPartKey);
+                    return;
+                }
+
+                currentStatusContainer.innerHTML = `
+                    <p class="input-label mb-2">步驟一：請選擇您最在意的臉部部位</p>
+                    <div id="face-sub-part-cards" class="face-custom-grid">
+                        <!-- Cards generated by renderFaceSubPartCards() -->
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-purple-200">
+                        <p id="face-anxiety-title" class="input-label text-purple-800 font-bold text-lg mb-3">步驟二：選擇「${activeSubPartData.label}」的焦慮類型</p>
+                        <div id="face-anxiety-list" class="anxiety-type-group">
+                            ${generateAnxietyTypeListHTML('face', partData.anxietyList, selectedAnxieties)}
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3">您可選取多個焦慮類型，這些將用於 AI 篩選器的權重調整。</p>
+                    </div>
+                `;
+                renderFaceSubPartCards(); // Initial rendering of the cards and active state
+
+            } else if (partData.type === 'mixed') {
+                // --- RENDER OTHER PARTS (MIXED: DIMENSIONS + ANXIETY) ---
+                
+                // --- A. Dimensions Inputs ---
+                let inputsHTML = `
+                    <p class="input-label text-purple-800 font-bold text-lg mb-3">步驟一：目前尺寸輸入</p>
+                    <div class="space-y-3 mb-6">
+                `;
+                partData.inputs.forEach(input => {
+                    // Determine the correct value from state.currentStatus
+                    const currentValue = state.currentStatus[activePart].dimensions[input.id];
+                    
+                    // 關鍵: type="text" 允許輸入多位數
+                    const inputElementHTML = `
+                        <input 
+                            type="text" 
+                            id="${activePart}-${input.id}" 
+                            placeholder="${input.placeholder}" 
+                            value="${currentValue !== null ? currentValue : ''}" 
+                            data-part="${activePart}"
+                            data-key="${input.id}"
+                            class="status-input" 
+                            oninput="window.handleDynamicInput(this)"
+                        />
+                    `;
+
+                    inputsHTML += `
+                        <div class="w-full">
+                            <label for="${activePart}-${input.id}" class="input-label">${input.label}</label>
+                            ${inputElementHTML}
+                        </div>
+                    `;
+                });
+                inputsHTML += `</div>`;
+
+                // --- B. Anxiety Type Selection ---
+                const selectedAnxieties = state.currentStatus[activePart].anxieties || [];
+                const anxietyHTML = `
+                    <p class="input-label text-purple-800 font-bold text-lg mb-3 pt-4 border-t border-purple-200">步驟二：選擇您的焦慮類型</p>
+                    <div class="anxiety-type-group">
+                        ${generateAnxietyTypeListHTML(activePart, partData.anxietyTypes, selectedAnxieties)}
+                    </div>
+                `;
+                
+                currentStatusContainer.innerHTML = inputsHTML + anxietyHTML;
+            }
+        };
+
+        const renderSettingsFromState = () => {
+            // Restore basic info
+            document.getElementById('age-input').value = state.userInfo.age || '';
+            document.getElementById('gender-select').value = state.userInfo.gender || '';
+            document.getElementById('topic-input').value = state.userInfo.topic || '';
+
+            // Restore body part selections
+            document.querySelectorAll('#body-parts-container input[type="checkbox"]').forEach(input => {
+                const part = input.value;
+                const isSelected = state.selectedParts.includes(part);
+                input.checked = isSelected;
+                
+                // Update UI styles
+                const label = input.closest('label');
+                const span = label.querySelector('.checkbox-label');
+                span.classList.toggle('bg-purple-600', isSelected);
+                span.classList.toggle('border-purple-600', isSelected);
+                span.classList.toggle('text-white', isSelected);
+                span.classList.toggle('bg-white', !isSelected);
+                span.classList.toggle('border-ddd', !isSelected);
+                span.classList.toggle('text-333', !isSelected);
+            });
+            
+            // Render the active part inputs
+            renderCurrentStatusInputs();
+
+            // Restore image status
+            document.getElementById('anxiety-example-status').textContent = state.anxietyExample ? 
+                `已上傳焦慮照片 (${(state.anxietyExample.length / 1024 / 1024).toFixed(2)} MB)` : 
+                '尚未上傳焦慮照片。 (此圖將作為過濾器的負向參考)';
+
+            validateSettings();
+        };
+
+        const validateSettings = () => {
+            const hasInfo = state.userInfo.age && state.userInfo.gender;
+            const hasParts = state.selectedParts.length > 0;
+            
+            startFilterButton.disabled = false;
+            startFilterButton.classList.remove('disabled-button');
+            startFilterButton.textContent = '開始進行篩選 (進入實驗頁)';
+
+            if (!hasParts) {
+                settingsFeedback.classList.remove('hidden');
+                settingsFeedback.textContent = '注意：您尚未選擇理想部位。繼續操作將使用預設的空數據進行篩選模擬。';
+            } else if (!hasInfo) {
+                settingsFeedback.classList.remove('hidden');
+                settingsFeedback.textContent = '注意：您尚未填寫基本資料。繼續操作將使用預設的空數據進行篩選模擬。';
+            } else {
+                settingsFeedback.classList.add('hidden');
+            }
+            return true; 
+        };
+        
+        // --- EVENT HANDLERS ---
+        
+        const handleBodyPartSelection = (e) => {
+            e.preventDefault(); 
+            const label = e.currentTarget;
+            const input = label.querySelector('input');
+            const part = input.value;
+            const isChecked = !input.checked;
+            
+            input.checked = isChecked; 
+
+            if (isChecked) {
+                if (!state.selectedParts.includes(part)) {
+                    state.selectedParts.push(part);
+                }
+                state.activePartForInput = part; 
+            } else {
+                state.selectedParts = state.selectedParts.filter(p => p !== part);
+                
+                if (state.activePartForInput === part) {
+                    state.activePartForInput = state.selectedParts.length > 0 ? 
+                                              state.selectedParts[state.selectedParts.length - 1] : 
+                                              null;
+                }
+            }
+            
+            // DEBUG: Log the active part to confirm state update
+            console.log(`Part selected: ${part}. IsChecked: ${isChecked}. Active part for input: ${state.activePartForInput}`);
+            
+            // Update UI styles
+            const span = label.querySelector('.checkbox-label');
+            span.classList.toggle('bg-purple-600', isChecked);
+            span.classList.toggle('border-purple-600', isChecked);
+            span.classList.toggle('text-white', isChecked);
+            span.classList.toggle('bg-white', !isChecked);
+            span.classList.toggle('border-ddd', !isChecked);
+            span.classList.toggle('text-333', !isChecked);
+            
+            renderCurrentStatusInputs(); // Rerender dynamic inputs
+            validateSettings();
+            saveStateToFirestore();
+        };
+
+        const handleStartFilter = () => {
+            // Save user info and ensure status data is up-to-date
+            state.userInfo.age = document.getElementById('age-input').value;
+            state.userInfo.gender = document.getElementById('gender-select').value;
+            state.userInfo.topic = document.getElementById('topic-input').value;
+            
+            // Navigate to Experiment Page (Page 2)
+            settingsPage.classList.add('hidden-page');
+            experimentPage.classList.remove('hidden-page');
+            
+            initializeExperimentSet();
+            saveStateToFirestore();
+        };
+
+
+        // --- EXPERIMENT, GALLERY LOGIC ---
+
+        const initializeExperimentSet = () => { 
+            experimentGrid.innerHTML = ''; 
+            const imagesToShow = PLACEHOLDER_IMAGES.slice(0, state.imagesPerSet);
+            
+            document.getElementById('step-selection-instruction').classList.remove('hidden');
+            document.getElementById('step-rating-instruction').classList.add('hidden');
+            document.getElementById('go-to-rating-button').classList.remove('hidden');
+            document.getElementById('next-set-button').classList.add('hidden');
+            
+            document.getElementById('go-to-rating-button').disabled = true;
+            document.getElementById('go-to-rating-button').textContent = '進入評分步驟 (已選擇 0/3)';
+            selectionStatusText.textContent = '您已選擇 0 張 / 需選擇 3 張';
+            
+            let selectionCount = 0;
+
+            imagesToShow.forEach((imageUrl, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'selection-wrapper';
+                wrapper.setAttribute('data-index', index); 
+                wrapper.setAttribute('data-rating', 1); 
+
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = `Experiment Image ${index + 1}`;
+                img.className = 'selection-item';
+                img.loading = 'lazy';
+                
+                const sliderLabel = document.createElement('div');
+                sliderLabel.className = 'slider-label'; 
+                // 初始顯示為 1 分
+                sliderLabel.textContent = getRatingText(1); 
+                
+                const controls = document.createElement('div');
+                controls.className = 'rating-controls flex flex-col items-center'; 
+                controls.innerHTML = `
+                    <div class="w-full">
+                        <!-- 將 max 調整為 7 -->
+                        <input type="range" min="1" max="7" value="1" class="rating-slider w-full" />
+                        <div class="flex justify-between text-xs mt-1 w-full px-1">
+                            <span class="font-bold text-red-300">1 (完全不焦慮)</span>
+                            <!-- 將 5 改為 7 -->
+                            <span class="font-bold text-red-500">7 (非常焦慮)</span>
+                        </div>
+                    </div>
+                `;
+                
+                // 確保滑桿拖動時分數即時更新
+                controls.querySelector('.rating-slider').addEventListener('input', (e) => {
+                    const rating = parseInt(e.target.value, 10);
+                    wrapper.setAttribute('data-rating', rating);
+                    
+                    // 根據使用者要求，即時顯示滑桿選擇的分數和描述
+                    sliderLabel.textContent = getRatingText(rating); 
+
+                    checkRatingCompletion();
+                });
+                
+                wrapper.appendChild(img);
+                wrapper.appendChild(sliderLabel); // Label above the image content
+                wrapper.appendChild(controls); // Controls over the bottom of the image
+                experimentGrid.appendChild(wrapper);
+
+                // Main click event for selection (Step 1)
+                wrapper.addEventListener('click', () => {
+                    // Only allow selection in Step 1 (when rating instruction is hidden)
+                    if (!document.getElementById('step-rating-instruction').classList.contains('hidden')) return;
+
+                    const isSelected = wrapper.classList.toggle('selected');
+                    selectionCount = experimentGrid.querySelectorAll('.selection-wrapper.selected').length;
+                    
+                    if (isSelected && selectionCount > 3) {
+                        wrapper.classList.remove('selected');
+                        selectionCount = 3; 
+                    }
+
+                    selectionStatusText.textContent = `您已選擇 ${selectionCount} 張 / 需選擇 3 張`;
+                    document.getElementById('go-to-rating-button').disabled = selectionCount !== 3;
+                    document.getElementById('go-to-rating-button').textContent = `進入評分步驟 (已選擇 ${selectionCount}/3)`;
+                    document.getElementById('go-to-rating-button').classList.toggle('disabled-button', selectionCount !== 3);
+                });
+            });
+        };
+        
+        const checkRatingCompletion = () => {
+            const allSliders = experimentGrid.querySelectorAll('.rating-slider');
+            let completedRatings = 0;
+            allSliders.forEach(slider => {
+                // Since min is 1, any value means it's rated.
+                if (slider.value >= 1 && slider.value <= 7) { // 檢查範圍也更新為 7
+                    completedRatings++;
+                }
+            });
+
+            const totalRatings = state.imagesPerSet;
+            const isCompleted = completedRatings === totalRatings;
+
+            nextSetButton.disabled = !isCompleted;
+            nextSetButton.classList.toggle('disabled-button', !isCompleted);
+            
+            nextSetButton.textContent = isCompleted ? 
+                '完成實驗，前往 AI 過濾結果圖庫' :
+                `請完成所有 ${totalRatings} 張圖片的評分`;
+        };
+
+        const handleGoToRating = () => {
+            document.getElementById('step-selection-instruction').classList.add('hidden');
+            document.getElementById('step-rating-instruction').classList.remove('hidden');
+            document.getElementById('go-to-rating-button').classList.add('hidden');
+            document.getElementById('next-set-button').classList.remove('hidden');
+            
+            experimentGrid.querySelectorAll('.selection-wrapper').forEach(wrapper => {
+                const controls = wrapper.querySelector('.rating-controls');
+                const sliderLabel = wrapper.querySelector('.slider-label');
+                
+                // Show rating controls and the dynamic score label
+                controls.classList.add('visible');
+                sliderLabel.classList.add('visible');
+                
+                // 紅框保留：不移除 .selected 類別
+            });
+            
+            checkRatingCompletion();
+        };
+
+        const handleNextSet = () => {
+            const currentResults = [];
+            experimentGrid.querySelectorAll('.selection-wrapper').forEach(wrapper => {
+                const index = parseInt(wrapper.getAttribute('data-index'), 10);
+                const rating = parseInt(wrapper.getAttribute('data-rating'), 10);
+                
+                currentResults.push({
+                    index: index,
+                    imageUrl: wrapper.querySelector('.selection-item').src,
+                    // Check if the wrapper still has the 'selected' class (meaning it was chosen in step 1)
+                    selected: wrapper.classList.contains('selected'), 
+                    rating: rating       
+                });
+            });
+
+            state.experimentData = [{ set: 1, results: currentResults }];
+
+            generateMockFilterResults();
+            showPage('gallery');
+            
+            saveStateToFirestore();
+        };
+
+        const generateMockFilterResults = () => {
+            // Simplified AI Mock: If the user selected 'legs' or 'face' and rated high, prioritize related filtering
+            let isAnxiousAboutLegs = state.selectedParts.includes('legs') && state.currentStatus.legs.anxieties.length > 0;
+            let isAnxiousAboutFace = state.selectedParts.includes('face') && Object.values(state.currentStatus.face.anxieties).flat().length > 0;
+            
+            console.log(`[AI Mock Filter] Profile: Legs=${isAnxiousAboutLegs}, Face=${isAnxiousAboutFace}`);
+
+            state.galleryImages = PLACEHOLDER_IMAGES.slice(0, 20).map((url, index) => {
+                const feature = MOCK_IMAGE_FEATURES[index];
+                let isTarget = false;
+                
+                // General filter (e.g., photo warping)
+                if (feature.isWarpedBackground) {
+                    isTarget = true; 
+                }
+                
+                // Specific filters based on user selection
+                if (feature.isLegFocus && isAnxiousAboutLegs) {
+                    isTarget = true; 
+                }
+                
+                if (feature.hasJawlineFocus && isAnxiousAboutFace) {
+                    isTarget = true;
+                }
+
+                return {
+                    id: `gallery-${index}`,
+                    url: url,
+                    isAnxietyTarget: isTarget, 
+                    isFiltered: false
+                };
+            });
+            
+            document.getElementById('show-full-results-button').disabled = false;
+            document.getElementById('show-full-results-button').classList.remove('disabled-button');
+            document.getElementById('show-full-results-button').textContent = '顯示完整 AI 過濾結果';
+
+            renderGallery(false);
+        };
+        
+        const renderGallery = (onlySafe = false) => {
+            galleryContainer.innerHTML = '';
+            let filteredCount = 0;
+
+            state.galleryImages.forEach(imgData => {
+                const isTarget = imgData.isAnxietyTarget;
+                
+                if (onlySafe && isTarget) {
+                    filteredCount++;
+                    return;
+                }
+                
+                const img = document.createElement('img');
+                img.src = imgData.url;
+                img.alt = `Gallery Item ${imgData.id}`;
+                img.className = `gallery-item ${isTarget ? 'filtered' : 'safe'}`;
+                img.loading = 'lazy';
+                galleryContainer.appendChild(img);
+            });
+            
+            const feedbackMessage = document.getElementById('feedback-message');
+            const confirmButton = document.getElementById('confirm-filter-button');
+
+            if (onlySafe) {
+                feedbackMessage.classList.remove('hidden', 'negative');
+                feedbackMessage.classList.add('positive');
+                feedbackMessage.textContent = `過濾器已啟動：成功隱藏了 ${filteredCount} 張可能引起您焦慮的內容。您的圖庫現已顯示安全內容。`;
+                confirmButton.classList.add('hidden');
+                document.getElementById('show-full-results-button').textContent = '顯示完整 AI 過濾結果';
+                state.galleryFiltered = true;
+            } else {
+                const targetCount = state.galleryImages.filter(i => i.isAnxietyTarget).length;
+                if (targetCount > 0) {
+                     feedbackMessage.classList.remove('hidden', 'positive');
+                     feedbackMessage.classList.add('negative');
+                     feedbackMessage.textContent = `AI 預測有 ${targetCount} 張圖片可能引起您的容貌焦慮。您可以點擊下方按鈕啟動過濾器。`;
+                     confirmButton.classList.remove('hidden');
+                     document.getElementById('show-full-results-button').textContent = '已顯示完整圖庫';
+                     state.galleryFiltered = false;
+                } else {
+                    feedbackMessage.classList.add('hidden');
+                    confirmButton.classList.add('hidden');
+                    document.getElementById('show-full-results-button').textContent = 'AI 認為圖庫內容安全 (無焦慮目標)';
+                }
+            }
+        };
+
+        // --- PAGE NAVIGATION ---
+        const showPage = (pageName) => {
+            settingsPage.classList.add('hidden-page');
+            experimentPage.classList.add('hidden-page');
+            galleryPage.classList.add('hidden-page');
+            mainContainer.classList.remove('gallery-view');
+
+            if (pageName === 'settings') {
+                settingsPage.classList.remove('hidden-page');
+                renderSettingsFromState(); 
+            } else if (pageName === 'experiment') {
+                experimentPage.classList.remove('hidden-page');
+            } else if (pageName === 'gallery') {
+                galleryPage.classList.remove('hidden-page');
+                mainContainer.classList.add('gallery-view');
+                if (state.experimentData.length === 0) {
+                    generateMockFilterResults(); 
+                }
+                renderGallery(state.galleryFiltered);
+            }
+        };
+
+        // --- INITIAL SETUP ---
+        const setupEventListeners = () => {
+            // General Info Listeners 
+            document.getElementById('age-input').addEventListener('change', (e) => {
+                state.userInfo.age = e.target.value;
+                validateSettings();
+                saveStateToFirestore();
+            });
+            document.getElementById('gender-select').addEventListener('change', (e) => {
+                state.userInfo.gender = e.target.value;
+                validateSettings();
+                saveStateToFirestore();
+            });
+            document.getElementById('topic-input').addEventListener('input', (e) => {
+                state.userInfo.topic = e.target.value;
+                // Topic input is non-critical, can be debounced or not. Keeping it instant for better UX.
+                saveStateToFirestore(); 
+            });
+
+            // Body Parts Listeners 
+            bodyPartsContainer.querySelectorAll('label[data-part]').forEach(label => {
+                label.addEventListener('click', handleBodyPartSelection);
+            });
+
+            // Anxiety Example Upload Listener
+            document.getElementById('anxiety-example-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                const labelText = document.getElementById('anxiety-example-label-text');
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        state.anxietyExample = reader.result; 
+                        document.getElementById('anxiety-example-status').textContent = `已上傳焦慮照片 (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                        labelText.textContent = '已上傳焦慮照片，點擊可更換';
+                        saveStateToFirestore();
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    state.anxietyExample = null;
+                    document.getElementById('anxiety-example-status').textContent = '尚未上傳焦慮照片。 (此圖將作為過濾器的負向參考)';
+                    labelText.textContent = '點擊上傳讓您感到焦慮的單張照片';
+                    saveStateToFirestore();
+                }
+            });
+
+            // Navigation Buttons 
+            startFilterButton.addEventListener('click', handleStartFilter);
+            document.getElementById('go-to-gallery-button-top').addEventListener('click', () => showPage('gallery'));
+            document.getElementById('back-to-settings-button').addEventListener('click', () => showPage('settings'));
+            document.getElementById('back-from-gallery-button').addEventListener('click', () => showPage('settings'));
+
+            // Experiment Buttons 
+            goRatingButton.addEventListener('click', handleGoToRating);
+            nextSetButton.addEventListener('click', handleNextSet);
+            
+            // Gallery Buttons 
+            document.getElementById('gallery-upload').addEventListener('change', (e) => {
+                const count = e.target.files.length;
+                document.getElementById('gallery-upload-status').textContent = `已上傳 ${count} 張圖片到模擬圖庫。`;
+                document.getElementById('show-full-results-button').disabled = false;
+                document.getElementById('show-full-results-button').classList.remove('disabled-button');
+                document.getElementById('show-full-results-button').textContent = '顯示完整 AI 過濾結果';
+
+                state.galleryImages = PLACEHOLDER_IMAGES.slice(0, 20);
+                generateMockFilterResults(); 
+                renderGallery(state.galleryFiltered);
+            });
+            
+            document.getElementById('show-full-results-button').addEventListener('click', () => {
+                if (state.galleryFiltered) {
+                    renderGallery(false); 
+                }
+            });
+            
+            document.getElementById('confirm-filter-button').addEventListener('click', () => {
+                renderGallery(true); 
+            });
+
+            document.getElementById('fullscreen-toggle-button').addEventListener('click', () => {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                    document.getElementById('fullscreen-toggle-button').textContent = '全螢幕模式';
+                } else {
+                    document.documentElement.requestFullscreen();
+                    document.getElementById('fullscreen-toggle-button').textContent = '離開全螢幕';
+                }
+            });
+        };
+
+        // --- RUN ON LOAD ---
+        window.onload = () => {
+            setupEventListeners();
+            showPage('settings'); 
+        };
+    </script>
+</body>
+</html>
